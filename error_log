@@ -1,0 +1,561 @@
+[24-May-2026 13:42:19 Asia/Colombo] PHP Fatal error:  Uncaught TypeError: Cannot access offset of type string on string in /home/creaeina/modarawila.creativelements-dev.info/index.php:113
+Stack trace:
+#0 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/index.php on line 113
+[24-May-2026 13:42:39 Asia/Colombo] PHP Fatal error:  Uncaught TypeError: Cannot access offset of type string on string in /home/creaeina/modarawila.creativelements-dev.info/index.php:113
+Stack trace:
+#0 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/index.php on line 113
+[24-May-2026 13:45:15 Asia/Colombo] PHP Fatal error:  Uncaught TypeError: Cannot access offset of type string on string in /home/creaeina/modarawila.creativelements-dev.info/index.php:113
+Stack trace:
+#0 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/index.php on line 113
+[24-May-2026 13:45:31 Asia/Colombo] PHP Fatal error:  Uncaught TypeError: Cannot access offset of type string on string in /home/creaeina/modarawila.creativelements-dev.info/index.php:113
+Stack trace:
+#0 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/index.php on line 113
+[24-May-2026 13:46:22 Asia/Colombo] PHP Fatal error:  Uncaught TypeError: Cannot access offset of type string on string in /home/creaeina/modarawila.creativelements-dev.info/index.php:113
+Stack trace:
+#0 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/index.php on line 113
+[24-May-2026 13:47:00 Asia/Colombo] PHP Fatal error:  Uncaught TypeError: Cannot access offset of type string on string in /home/creaeina/modarawila.creativelements-dev.info/index.php:113
+Stack trace:
+#0 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/index.php on line 113
+[24-May-2026 13:47:35 Asia/Colombo] PHP Fatal error:  Uncaught TypeError: Cannot access offset of type string on string in /home/creaeina/modarawila.creativelements-dev.info/index.php:113
+Stack trace:
+#0 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/index.php on line 113
+[24-May-2026 13:48:41 Asia/Colombo] PHP Fatal error:  Uncaught TypeError: Cannot access offset of type string on string in /home/creaeina/modarawila.creativelements-dev.info/index.php:113
+Stack trace:
+#0 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/index.php on line 113
+[25-May-2026 15:34:40 Asia/Colombo] PHP Warning:  Undefined array key "payment_status" in /home/creaeina/modarawila.creativelements-dev.info/assignments.php on line 376
+[25-May-2026 15:34:40 Asia/Colombo] PHP Warning:  Undefined array key "payment_status" in /home/creaeina/modarawila.creativelements-dev.info/assignments.php on line 376
+[25-May-2026 15:34:40 Asia/Colombo] PHP Warning:  Undefined array key "payment_status" in /home/creaeina/modarawila.creativelements-dev.info/assignments.php on line 376
+[25-May-2026 15:34:43 Asia/Colombo] PHP Warning:  Undefined array key "payment_status" in /home/creaeina/modarawila.creativelements-dev.info/assignments.php on line 376
+[25-May-2026 15:34:43 Asia/Colombo] PHP Warning:  Undefined array key "payment_status" in /home/creaeina/modarawila.creativelements-dev.info/assignments.php on line 376
+[25-May-2026 15:34:43 Asia/Colombo] PHP Warning:  Undefined array key "payment_status" in /home/creaeina/modarawila.creativelements-dev.info/assignments.php on line 376
+[29-May-2026 18:20:44 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/assignments.php(173): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:20:50 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/assignments.php(173): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:20:55 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/fertilizer.php(36): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:21:03 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/assignments.php(173): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:21:10 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/assignments.php(173): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:21:22 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/assignments.php(173): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:21:31 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/assignments.php(173): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:21:33 Asia/Colombo] PHP Warning:  Undefined variable $estateId in /home/creaeina/modarawila.creativelements-dev.info/payroll.php on line 64
+[29-May-2026 18:21:33 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/payroll.php(86): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:21:43 Asia/Colombo] PHP Warning:  Undefined variable $estateId in /home/creaeina/modarawila.creativelements-dev.info/expenses.php on line 91
+[29-May-2026 18:21:43 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/expenses.php(94): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:21:51 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/fertilizer.php(36): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:22:32 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/assignments.php(173): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:24:27 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/assignments.php(173): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:24:29 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/assignments.php(173): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:24:32 Asia/Colombo] PHP Warning:  Undefined variable $estateId in /home/creaeina/modarawila.creativelements-dev.info/expenses.php on line 85
+[29-May-2026 18:24:32 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'WHERE e.estate_id=? AND e.expense_date BETWEEN ? AND ? ORDER BY e.expense_dat...' at line 4 in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:24
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(24): PDO->prepare()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/expenses.php(82): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 24
+[29-May-2026 18:24:34 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/fertilizer.php(36): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:24:43 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/assignments.php(173): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:24:52 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/assignments.php(173): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:27:04 Asia/Colombo] PHP Warning:  Undefined variable $estateId in /home/creaeina/modarawila.creativelements-dev.info/workers.php on line 49
+[29-May-2026 18:27:08 Asia/Colombo] PHP Warning:  Undefined variable $estateId in /home/creaeina/modarawila.creativelements-dev.info/workers.php on line 49
+[29-May-2026 18:27:13 Asia/Colombo] PHP Warning:  Undefined variable $estateId in /home/creaeina/modarawila.creativelements-dev.info/payroll.php on line 64
+[29-May-2026 18:27:13 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/payroll.php(86): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:27:16 Asia/Colombo] PHP Warning:  Undefined variable $estateId in /home/creaeina/modarawila.creativelements-dev.info/expenses.php on line 85
+[29-May-2026 18:27:16 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'WHERE e.estate_id=? AND e.expense_date BETWEEN ? AND ? ORDER BY e.expense_dat...' at line 4 in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:24
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(24): PDO->prepare()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/expenses.php(82): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 24
+[29-May-2026 18:27:20 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/fertilizer.php(36): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:27:22 Asia/Colombo] PHP Warning:  Undefined variable $estateId in /home/creaeina/modarawila.creativelements-dev.info/workers.php on line 49
+[29-May-2026 18:27:30 Asia/Colombo] PHP Warning:  Undefined variable $estateId in /home/creaeina/modarawila.creativelements-dev.info/workers.php on line 49
+[29-May-2026 18:27:36 Asia/Colombo] PHP Warning:  Undefined variable $estateId in /home/creaeina/modarawila.creativelements-dev.info/workers.php on line 49
+[29-May-2026 18:28:11 Asia/Colombo] PHP Warning:  Undefined variable $estateId in /home/creaeina/modarawila.creativelements-dev.info/payroll.php on line 64
+[29-May-2026 18:28:11 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/payroll.php(86): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:28:27 Asia/Colombo] PHP Warning:  Undefined variable $estateId in /home/creaeina/modarawila.creativelements-dev.info/payroll.php on line 64
+[29-May-2026 18:28:27 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/payroll.php(86): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:28:47 Asia/Colombo] PHP Warning:  Undefined variable $estateId in /home/creaeina/modarawila.creativelements-dev.info/expenses.php on line 85
+[29-May-2026 18:28:47 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'WHERE e.estate_id=? AND e.expense_date BETWEEN ? AND ? ORDER BY e.expense_dat...' at line 4 in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:24
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(24): PDO->prepare()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/expenses.php(82): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 24
+[29-May-2026 18:30:43 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/payroll.php(86): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:30:45 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/payroll.php(86): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:30:52 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/payroll.php(86): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:30:54 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/expenses.php(94): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:31:01 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/payroll.php(86): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:32:15 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/expenses.php(94): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:32:52 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/expenses.php(94): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:33:33 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/fertilizer.php(35): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:37:36 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/index.php(62): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:37:39 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/index.php(62): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:37:54 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/index.php(62): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:39:17 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(34): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/production.php(16): DB::fetchOne()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:41:12 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(34): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/production.php(16): DB::fetchOne()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:41:36 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[21S01]: Insert value list does not match column list: 1136 Column count doesn't match value count at row 1 in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:24
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(24): PDO->prepare()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(38): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/fertilizer.php(22): DB::insert()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 24
+[29-May-2026 18:41:46 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[21S01]: Insert value list does not match column list: 1136 Column count doesn't match value count at row 1 in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:24
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(24): PDO->prepare()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(38): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/fertilizer.php(22): DB::insert()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 24
+[29-May-2026 18:43:34 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(34): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/production.php(16): DB::fetchOne()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 18:43:38 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(34): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/production.php(16): DB::fetchOne()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 19:10:44 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(34): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/production.php(16): DB::fetchOne()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 19:10:50 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(34): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/production.php(16): DB::fetchOne()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 19:38:27 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(34): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/production.php(16): DB::fetchOne()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 19:40:33 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[21S01]: Insert value list does not match column list: 1136 Column count doesn't match value count at row 1 in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:24
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(24): PDO->prepare()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(38): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/fertilizer.php(22): DB::insert()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 24
+[29-May-2026 19:53:53 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/payroll.php(67): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 19:53:55 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/payroll.php(67): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 19:54:00 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/plantations.php(61): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 19:54:04 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/reports.php(54): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 19:54:08 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/reports.php(54): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 19:54:10 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/reports.php(54): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 19:54:47 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/payroll.php(67): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 19:55:06 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/payroll.php(67): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 19:55:18 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/payroll.php(67): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 19:55:24 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/plantations.php(61): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 19:55:37 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/reports.php(54): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[29-May-2026 19:55:47 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/reports.php(54): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[31-May-2026 09:16:49 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1452 Cannot add or update a child row: a foreign key constraint fails (`creaeina_database`.`daily_assignments`, CONSTRAINT `daily_assignments_ibfk_1` FOREIGN KEY (`worker_id`) REFERENCES `workers` (`id`) ON DELETE CASCADE) in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(38): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/assignments.php(95): DB::insert()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[31-May-2026 09:44:18 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[21S01]: Insert value list does not match column list: 1136 Column count doesn't match value count at row 1 in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:24
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(24): PDO->prepare()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(38): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/expenses.php(45): DB::insert()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 24
+[31-May-2026 09:52:06 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[21S01]: Insert value list does not match column list: 1136 Column count doesn't match value count at row 1 in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:24
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(24): PDO->prepare()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(38): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/expenses.php(45): DB::insert()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 24
+[31-May-2026 22:11:39 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[21S01]: Insert value list does not match column list: 1136 Column count doesn't match value count at row 1 in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:24
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(24): PDO->prepare()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(38): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/expenses.php(45): DB::insert()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 24
+[31-May-2026 22:21:11 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1452 Cannot add or update a child row: a foreign key constraint fails (`creaeina_database`.`daily_assignments`, CONSTRAINT `daily_assignments_ibfk_1` FOREIGN KEY (`worker_id`) REFERENCES `workers` (`id`) ON DELETE CASCADE) in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(38): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/assignments.php(98): DB::insert()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[31-May-2026 22:23:46 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1452 Cannot add or update a child row: a foreign key constraint fails (`creaeina_database`.`daily_assignments`, CONSTRAINT `fk_da_worker` FOREIGN KEY (`worker_id`) REFERENCES `workers` (`id`) ON DELETE CASCADE) in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:25
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(25): PDOStatement->execute()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(38): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/assignments.php(98): DB::insert()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 25
+[01-Jun-2026 18:26:20 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 70
+[01-Jun-2026 18:26:20 Asia/Colombo] PHP Warning:  Uninitialized string offset 0 in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 72
+[01-Jun-2026 18:26:20 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 33
+[01-Jun-2026 18:26:24 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 70
+[01-Jun-2026 18:26:24 Asia/Colombo] PHP Warning:  Uninitialized string offset 0 in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 72
+[01-Jun-2026 18:26:24 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 33
+[01-Jun-2026 18:26:27 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 70
+[01-Jun-2026 18:26:27 Asia/Colombo] PHP Warning:  Uninitialized string offset 0 in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 72
+[01-Jun-2026 18:26:27 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 33
+[01-Jun-2026 18:27:33 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 70
+[01-Jun-2026 18:27:33 Asia/Colombo] PHP Warning:  Uninitialized string offset 0 in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 72
+[01-Jun-2026 18:27:33 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 33
+[01-Jun-2026 18:29:13 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 70
+[01-Jun-2026 18:29:13 Asia/Colombo] PHP Warning:  Uninitialized string offset 0 in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 72
+[01-Jun-2026 18:29:13 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 33
+[01-Jun-2026 18:29:17 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 70
+[01-Jun-2026 18:29:17 Asia/Colombo] PHP Warning:  Uninitialized string offset 0 in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 72
+[01-Jun-2026 18:29:17 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 33
+[01-Jun-2026 18:30:01 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 70
+[01-Jun-2026 18:30:01 Asia/Colombo] PHP Warning:  Uninitialized string offset 0 in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 72
+[01-Jun-2026 18:30:01 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 33
+[01-Jun-2026 18:30:49 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 70
+[01-Jun-2026 18:30:49 Asia/Colombo] PHP Warning:  Uninitialized string offset 0 in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 72
+[01-Jun-2026 18:30:49 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 33
+[01-Jun-2026 18:30:54 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 70
+[01-Jun-2026 18:30:54 Asia/Colombo] PHP Warning:  Uninitialized string offset 0 in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 72
+[01-Jun-2026 18:30:54 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 33
+[02-Jun-2026 19:06:38 Asia/Colombo] PHP Warning:  Undefined variable $appName in /home/creaeina/modarawila.creativelements-dev.info/worker-report.php on line 250
+[02-Jun-2026 19:06:38 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 33
+[02-Jun-2026 19:06:38 Asia/Colombo] PHP Warning:  Undefined variable $appName in /home/creaeina/modarawila.creativelements-dev.info/worker-report.php on line 260
+[02-Jun-2026 19:06:38 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 33
+[02-Jun-2026 19:06:41 Asia/Colombo] PHP Warning:  Undefined variable $appName in /home/creaeina/modarawila.creativelements-dev.info/worker-report.php on line 250
+[02-Jun-2026 19:06:41 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 33
+[02-Jun-2026 19:06:41 Asia/Colombo] PHP Warning:  Undefined variable $appName in /home/creaeina/modarawila.creativelements-dev.info/worker-report.php on line 260
+[02-Jun-2026 19:06:41 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 33
+[02-Jun-2026 19:06:47 Asia/Colombo] PHP Warning:  Undefined variable $appName in /home/creaeina/modarawila.creativelements-dev.info/worker-report.php on line 250
+[02-Jun-2026 19:06:47 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 33
+[02-Jun-2026 19:06:47 Asia/Colombo] PHP Warning:  Undefined variable $appName in /home/creaeina/modarawila.creativelements-dev.info/worker-report.php on line 260
+[02-Jun-2026 19:06:47 Asia/Colombo] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in /home/creaeina/modarawila.creativelements-dev.info/includes/functions.php on line 33
+[22-Jun-2026 19:23:32 Asia/Colombo] PHP Warning:  Undefined array key 1 in /home/creaeina/modarawila.creativelements-dev.info/cost-report-pdf.php on line 349
+[22-Jun-2026 19:26:02 Asia/Colombo] PHP Warning:  Undefined array key 2 in /home/creaeina/modarawila.creativelements-dev.info/cost-report-pdf.php on line 349
+[22-Jun-2026 19:28:54 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'approval_status' in 'WHERE' in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:24
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(24): PDO->prepare()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/cost-report-pdf.php(62): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 24
+[22-Jun-2026 19:28:56 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'approval_status' in 'WHERE' in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:24
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(24): PDO->prepare()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/cost-report-pdf.php(62): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 24
+[22-Jun-2026 19:28:57 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'approval_status' in 'WHERE' in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:24
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(24): PDO->prepare()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/cost-report-pdf.php(62): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 24
+[22-Jun-2026 19:28:59 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'approval_status' in 'WHERE' in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:24
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(24): PDO->prepare()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/cost-report-pdf.php(62): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 24
+[22-Jun-2026 19:30:51 Asia/Colombo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'approval_status' in 'WHERE' in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php:24
+Stack trace:
+#0 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(24): PDO->prepare()
+#1 /home/creaeina/modarawila.creativelements-dev.info/includes/db.php(30): DB::query()
+#2 /home/creaeina/modarawila.creativelements-dev.info/cost-report-pdf.php(62): DB::fetchAll()
+#3 {main}
+  thrown in /home/creaeina/modarawila.creativelements-dev.info/includes/db.php on line 24

@@ -1,0 +1,25 @@
+# ============================================
+# Harvest Pro — Server Configuration
+# ============================================
+
+# Prevent caching of PHP pages — ensures fresh data on every request
+<FilesMatch "\.(php)$">
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "Thu, 01 Jan 1970 00:00:00 GMT"
+</FilesMatch>
+
+# Allow caching of static assets (CSS, JS, images)
+<FilesMatch "\.(css|js|png|jpg|jpeg|gif|svg|webp|ico|woff|woff2)$">
+    Header set Cache-Control "public, max-age=31536000"
+</FilesMatch>
+
+# Protect backup directory
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^backups/ - [F,L]
+</IfModule>
+
+# PHP settings for better error handling
+php_flag display_errors Off
+php_flag log_errors On
