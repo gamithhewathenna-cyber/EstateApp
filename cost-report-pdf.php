@@ -452,8 +452,8 @@ body {
   ?>
   <div class="summary-bar">
     <div class="sum-item">
-      <div class="sum-label">Grand Total</div>
-      <div class="sum-value"><?= money($grandTotal) ?></div>
+      <div class="sum-label">Total Cost</div>
+      <div class="sum-value"><?= money($grandTotal + $totalExpensesAmt) ?></div>
     </div>
     <div class="sum-item">
       <div class="sum-label">Tea Plucking</div>
@@ -471,10 +471,6 @@ body {
     <div class="sum-item">
       <div class="sum-label">Expenses</div>
       <div class="sum-value" style="color:#B45309"><?= money($totalExpensesAmt) ?></div>
-    </div>
-    <div class="sum-item">
-      <div class="sum-label">Grand Total (incl. exp.)</div>
-      <div class="sum-value"><?= money($grandTotal + $totalExpensesAmt) ?></div>
     </div>
     <?php endif; ?>
     <div class="sum-item">
@@ -496,6 +492,12 @@ body {
     $wkKg       = array_sum(array_map(fn($r)=>strtolower($r['unit_label'])==='kg'?$r['quantity']:0, $wkAllRows));
     $wkPluck    = array_sum(array_map(fn($r)=>strtolower($r['unit_label'])==='kg'?$r['payment']:0, $wkAllRows));
     $wkOther    = $weekTotalV - $wkPluck;
+    // Calculate week expenses early so the header can include them
+    $wkExpDates = $expByWeek[$wk] ?? [];
+    $wkExpTotal = 0;
+    foreach ($wkExpDates as $expDate => $exps) {
+        foreach ($exps as $ex) $wkExpTotal += $ex['amount'];
+    }
     // Week date range
     $wkDates    = array_keys($dates);
     $wkMonday   = $wdata['week_monday'];
@@ -510,7 +512,7 @@ body {
         <div class="week-title"><?= $wLabel ?> &nbsp;·&nbsp; <?= date('F Y', strtotime($wkMonday)) ?></div>
         <div class="week-dates">Mon <?= $wkStart ?> – Sun <?= $wkEnd ?> &nbsp;·&nbsp; <?= count($dates) ?> day(s) &nbsp;·&nbsp; <?= count($wkAllRows) ?> record(s)</div>
       </div>
-      <div class="week-total"><?= money($weekTotalV) ?></div>
+      <div class="week-total"><?= money($weekTotalV + $wkExpTotal) ?></div>
     </div>
 
     <!-- Dates within week -->
@@ -565,13 +567,6 @@ body {
       <?php endforeach; ?>
 
       <!-- Expenses for this week -->
-      <?php
-      $wkExpDates = $expByWeek[$wk] ?? [];
-      $wkExpTotal = 0;
-      foreach ($wkExpDates as $expDate => $exps) {
-        foreach ($exps as $ex) $wkExpTotal += $ex['amount'];
-      }
-      ?>
       <?php if ($wkExpDates): ?>
       <?php foreach ($wkExpDates as $expDate => $exps): ?>
       <div class="date-header" style="background:#FEF3C7;border-color:#FCD34D">
@@ -628,9 +623,8 @@ body {
   <?php endforeach; ?>
 
   <!-- ── GRAND TOTAL ── -->
-  <?php if (count($byWeek) > 1): ?>
   <div class="grand-total">
-    <div class="grand-label">Grand Total — <?= $monthLabel ?></div>
+    <div class="grand-label"><?= count($byWeek) > 1 ? 'Grand Total — '.$monthLabel : $weekLabels[$selWeek].' Total — '.$monthLabel ?></div>
     <div class="grand-breakdown">
       <?php if ($grandKg > 0): ?>
       <div class="grand-item">
@@ -646,7 +640,7 @@ body {
         <div class="grand-item-label">Other Work</div>
         <div class="grand-item-val"><?= money($totalOther) ?></div>
       </div>
-    <?php if ($totalExpensesAmt > 0): ?>
+      <?php if ($totalExpensesAmt > 0): ?>
       <div class="grand-item">
         <div class="grand-item-label">Expenses</div>
         <div class="grand-item-val" style="color:#FCD34D"><?= money($totalExpensesAmt) ?></div>
@@ -658,7 +652,6 @@ body {
       </div>
     </div>
   </div>
-  <?php endif; ?>
 
   <!-- ── FOOTER ── -->
   <div class="report-footer">
