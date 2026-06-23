@@ -550,3 +550,47 @@ tbody tr:hover td { background: #f8faf5; }
   textarea,
   input { font-size: 16px; }
 }
+
+/* ============================================================
+   ADDITIONAL MOBILE FIXES
+   ============================================================ */
+
+/* Topbar estate name subtitle — hide on very small screens */
+@media (max-width: 400px) {
+  .topbar > div > div[style*="font-size:11px"] { display: none; }
+}
+
+/* Report cards — stack actions on mobile */
+@media (max-width: 600px) {
+  .report-card { flex-wrap: wrap; }
+  .report-actions { margin-left: 0; width: 100%; }
+}
+
+/* Filter row form — ensure the form items wrap on mobile */
+@media (max-width: 600px) {
+  .filter-row form { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
+  .filter-row form input,
+  .filter-row form select { flex: 1; min-width: 120px; }
+}
+
+/* Calc box — stack on very small screens */
+@media (max-width: 400px) {
+  .calc-box { flex-direction: column; gap: 8px; text-align: center; }
+}
+
+/* Tab row — allow horizontal scroll on very small screens */
+@media (max-width: 360px) {
+  .tab-row { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab-btn { white-space: nowrap; flex-shrink: 0; }
+}
+
+/* Ensure topbar right items shrink on small screens */
+@media (max-width: 480px) {
+  .topbar-right { gap: 4px; }
+  .page-title { font-size: 14px; }
+}
+
+/* Login card padding on tiny screens */
+@media (max-width: 400px) {
+  .login-card { padding: 24px 18px; }
+}

@@ -435,6 +435,20 @@ require_once __DIR__ . '/includes/header.php';
   .tab-btn { font-size: 10px; padding: 5px 7px; }
   .assign-item { font-size: 11px; }
 }
+
+/* ── COST TAB SUMMARY GRID ── */
+.cost-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+@media (max-width: 700px) {
+  .cost-summary-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 400px) {
+  .cost-summary-grid { grid-template-columns: 1fr; }
+}
+
+/* Cost report print links wrap on mobile */
+@media (max-width: 600px) {
+  .cost-print-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+}
 </style>
 
 <!-- SUPERVISOR NOTICE -->
@@ -1006,7 +1020,7 @@ require_once __DIR__ . '/includes/header.php';
       </form>
 
       <?php if ($selCostSection): ?>
-      <div style="margin-bottom:14px">
+      <div class="cost-print-buttons" style="margin-bottom:14px">
         <a href="cost-report-pdf.php?section=<?= urlencode($selCostSectionRaw) ?>&month=<?= $selCostMonth ?>"
            target="_blank"
            class="btn btn-primary btn-sm" style="display:inline-flex;align-items:center;gap:6px">
@@ -1015,7 +1029,7 @@ require_once __DIR__ . '/includes/header.php';
         <?php foreach(($weeklyData??[]) as $i=>$wk): ?>
         <a href="cost-report-pdf.php?section=<?= urlencode($selCostSectionRaw) ?>&month=<?= $selCostMonth ?>&week=<?= $wk['week_num'] ?>"
            target="_blank"
-           class="btn btn-outline btn-sm" style="margin-left:4px;font-size:11px">
+           class="btn btn-outline btn-sm" style="font-size:11px">
           Week <?= $i+1 ?> (Mon <?= date('d M', strtotime($wk['week_start'])) ?> – Sun <?= date('d M', strtotime($wk['week_end'])) ?>)
         </a>
         <?php endforeach; ?>
@@ -1032,7 +1046,7 @@ require_once __DIR__ . '/includes/header.php';
 
       <!-- Monthly Summary pills -->
       <?php if ($sectionTotal): ?>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">
+      <div class="cost-summary-grid">
         <?php foreach([
           ['Total Cost',    money($sectionTotal['total']),   'var(--green-600)', 'ti-cash',   'var(--green-50)'],
           ['Tea Plucking',  money($sectionTotal['plucking']),'var(--teal-600)',  'ti-weight', 'var(--teal-50)'],

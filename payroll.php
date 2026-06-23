@@ -132,6 +132,30 @@ require_once __DIR__ . '/includes/header.php';
 .status-partial { background:#fef3c7; color:#92400e; border:1px solid #fcd34d; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; display:inline-flex; align-items:center; gap:4px; }
 .pay-row-paid    td { background:#f0fdf4 !important; }
 .pay-row-pending td { background:#fff5f5 !important; }
+
+@media (max-width: 900px) {
+  .payroll-filter-actions { flex-wrap: wrap !important; margin-left: 0 !important; gap: 6px !important; }
+  .filter-row { flex-direction: column; align-items: stretch; gap: 8px; }
+}
+@media (max-width: 600px) {
+  /* Worker summary table — hide less critical columns */
+  .payroll-worker-table th:nth-child(2), .payroll-worker-table td:nth-child(2),
+  .payroll-worker-table th:nth-child(3), .payroll-worker-table td:nth-child(3),
+  .payroll-worker-table th:nth-child(4), .payroll-worker-table td:nth-child(4),
+  .payroll-worker-table th:nth-child(5), .payroll-worker-table td:nth-child(5),
+  .payroll-worker-table th:nth-child(7), .payroll-worker-table td:nth-child(7),
+  .payroll-worker-table th:nth-child(8), .payroll-worker-table td:nth-child(8) { display: none !important; }
+  /* Worker detail table */
+  .payroll-detail-table th:nth-child(2), .payroll-detail-table td:nth-child(2),
+  .payroll-detail-table th:nth-child(3), .payroll-detail-table td:nth-child(3),
+  .payroll-detail-table th:nth-child(5), .payroll-detail-table td:nth-child(5) { display: none !important; }
+  /* Daily summary table */
+  .payroll-daily-table th:nth-child(3), .payroll-daily-table td:nth-child(3),
+  .payroll-daily-table th:nth-child(5), .payroll-daily-table td:nth-child(5) { display: none !important; }
+  /* Worker detail header row */
+  .payroll-detail-header { flex-wrap: wrap; gap: 8px; }
+  .payroll-detail-header form { margin-left: 0 !important; }
+}
 </style>
 
 <!-- Filter row -->
@@ -142,7 +166,7 @@ require_once __DIR__ . '/includes/header.php';
     <input type="month" name="month" value="<?= sanitize($selMonth) ?>" onchange="this.form.submit()">
     <button type="submit" class="btn btn-secondary btn-sm">View</button>
   </form>
-  <div style="display:flex;gap:8px;margin-left:auto">
+  <div class="payroll-filter-actions" style="display:flex;gap:8px;margin-left:auto">
     <!-- Mark ALL paid -->
     <form method="POST" onsubmit="return confirm('Mark ALL payments as Paid for <?= date('F Y',strtotime($selMonth.'-01')) ?>?')">
       <input type="hidden" name="action" value="mark_all_paid">
@@ -212,7 +236,7 @@ require_once __DIR__ . '/includes/header.php';
 <?php if ($detailWorker && $workerDetail !== null): ?>
 <!-- Worker Detail View -->
 <div class="card" style="margin-bottom:14px;border:2px solid var(--green-200)">
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+  <div class="payroll-detail-header" style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
     <a href="payroll.php?month=<?= $selMonth ?>&tab=worker" class="btn btn-outline btn-sm"><i class="ti ti-arrow-left"></i> Back</a>
     <div class="avatar" style="width:36px;height:36px"><?= initials($detailWorkerName['full_name']) ?></div>
     <div>
@@ -228,7 +252,7 @@ require_once __DIR__ . '/includes/header.php';
     </form>
   </div>
   <div class="table-wrap">
-    <table>
+    <table class="payroll-detail-table">
       <thead>
         <tr><th>Date</th><th>Section</th><th>Work Type</th><th>Qty</th><th>Rate</th><th>Payment</th><th>Status</th><th>Action</th></tr>
       </thead>
@@ -281,7 +305,7 @@ require_once __DIR__ . '/includes/header.php';
 <!-- Worker Summary Table -->
 <div class="card">
   <div class="table-wrap">
-    <table>
+    <table class="payroll-worker-table">
       <thead>
         <tr>
           <th>Worker</th><th>Days</th><th>Total KG</th><th>Plucking</th><th>Other</th>
@@ -375,7 +399,7 @@ require_once __DIR__ . '/includes/header.php';
 <?php else: ?>
 <div class="card">
   <div class="table-wrap">
-    <table>
+    <table class="payroll-daily-table">
       <thead>
         <tr><th>Date</th><th>Workers</th><th>KG Plucked</th><th>Payroll</th><th>Paid</th><th>Pending</th></tr>
       </thead>

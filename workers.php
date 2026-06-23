@@ -80,7 +80,7 @@ require_once __DIR__ . '/includes/header.php';
   <form method="GET" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
     <div class="search-wrap">
       <i class="ti ti-search"></i>
-      <input type="text" name="search" placeholder="Search workers..." value="<?= sanitize($search) ?>" style="width:220px">
+      <input type="text" name="search" placeholder="Search workers..." value="<?= sanitize($search) ?>" style="max-width:220px;width:100%">
     </div>
     <select name="status" onchange="this.form.submit()">
       <option value="all"      <?= $status==='all'     ?'selected':'' ?>>All Status</option>

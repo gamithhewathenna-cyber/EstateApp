@@ -151,8 +151,21 @@ require_once __DIR__ . '/includes/header.php';
 .shortcut-btn{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid #e8ede5;background:#fff;cursor:pointer;color:var(--gray-600);text-decoration:none;white-space:nowrap;transition:all .15s}
 .shortcut-btn:hover{background:var(--green-50);border-color:var(--green-200);color:var(--green-800)}
 .shortcut-btn.active{background:var(--green-600);border-color:var(--green-600);color:#fff}
-.range-inputs{display:flex;align-items:center;gap:6px}
+.range-inputs{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .range-inputs input[type=date]{font-size:12px;padding:5px 8px;border:1px solid #d8ddd5;border-radius:var(--radius-md);color:var(--gray-800)}
+/* Responsive dashboard grids */
+.dash-section-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.period-cost-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:768px){
+  .dash-section-grid{grid-template-columns:1fr}
+  .period-cost-grid{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .range-bar{padding:12px 14px;gap:8px}
+  .range-label{font-size:13px;min-width:0;flex:none;width:100%}
+  .range-inputs{width:100%}
+  .range-inputs input[type=date]{flex:1;min-width:0}
+}
 </style>
 
 <!-- ── DATE RANGE BAR ─────────────────────────────── -->
@@ -301,7 +314,7 @@ require_once __DIR__ . '/includes/header.php';
 </div>
 
 <!-- ── SECTION COST + KG BY SECTION ────────────────── -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+<div class="dash-section-grid">
 
   <!-- Section Cost -->
   <div class="card">
@@ -367,7 +380,7 @@ require_once __DIR__ . '/includes/header.php';
     <span style="font-size:14px;font-weight:700;color:var(--green-900)">Period Cost Summary</span>
     <span style="font-size:12px;color:var(--gray-400);margin-left:4px"><?= fmtDate($dateFrom) ?> → <?= fmtDate($dateTo) ?></span>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+  <div class="period-cost-grid">
     <div style="background:var(--green-50);border-radius:var(--radius-md);padding:14px 16px">
       <div style="font-size:11px;font-weight:700;color:var(--green-600);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">
         <i class="ti ti-cash"></i> Payroll

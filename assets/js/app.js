@@ -3,7 +3,7 @@
 // Sidebar toggle (mobile)
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('sidebarOverlay').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('open');
 }
 
 // Auto-dismiss flash messages after 4s
