@@ -78,6 +78,16 @@ $fertDue = DB::fetchAll("SELECT fc.*, p.name as plantation_name
     WHERE fc.estate_id=? AND p.estate_id=? AND p.is_active=1 AND fc.next_due_date IS NOT NULL AND fc.next_due_date != ''
     ORDER BY fc.next_due_date ASC", [$estateId,$estateId,$estateId]);
 
+// Pre-group fertilizer cycles by urgency (avoids arrow-function edge cases)
+$fertOverdue = []; $fertUrgent = []; $fertSoon = []; $fertOk = [];
+foreach ($fertDue as $fc) {
+    $fd = daysUntil($fc['next_due_date']);
+    if ($fd <= 0)       $fertOverdue[] = $fc;
+    elseif ($fd <= 7)   $fertUrgent[]  = $fc;
+    elseif ($fd <= 21)  $fertSoon[]    = $fc;
+    else                $fertOk[]      = $fc;
+}
+
 // Recent expenses in range
 $recentExp = DB::fetchAll("SELECT e.*, p.name as plantation_name 
     FROM expenses e LEFT JOIN plantations p ON e.plantation_id=p.id 
@@ -224,12 +234,6 @@ require_once __DIR__ . '/includes/header.php';
 </div>
 
 <!-- ── UPCOMING FERTILIZER REMINDERS ── -->
-<?php
-$fertOverdue = array_filter($fertDue, fn($f) => daysUntil($f['next_due_date']) <= 0);
-$fertUrgent  = array_filter($fertDue, fn($f) => ($d=daysUntil($f['next_due_date'])) > 0 && $d <= 7);
-$fertSoon    = array_filter($fertDue, fn($f) => ($d=daysUntil($f['next_due_date'])) > 7  && $d <= 21);
-$fertOk      = array_filter($fertDue, fn($f) => daysUntil($f['next_due_date']) > 21);
-?>
 <div class="card" style="margin-bottom:20px">
   <div class="card-header" style="margin-bottom:14px">
     <div class="card-title"><i class="ti ti-bell-ringing" style="color:var(--amber-500)"></i> Upcoming Fertilizer Reminders</div>
