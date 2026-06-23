@@ -13,7 +13,6 @@ $nav = [
     ['key'=>'fertilizer',  'label'=>'Fertilizer Cycles',   'icon'=>'ti-droplet',          'roles'=>['admin']],
     ['key'=>'plantations', 'label'=>'Plantation Sections', 'icon'=>'ti-trees',            'roles'=>['admin']],
     ['key'=>'reports',        'label'=>'Reports',             'icon'=>'ti-chart-bar',        'roles'=>['admin']],
-    ['key'=>'worker-report',  'label'=>'Worker Report',       'icon'=>'ti-report',           'roles'=>['admin','supervisor']],
     ['key'=>'users',          'label'=>'User Management',     'icon'=>'ti-shield-lock',      'roles'=>['admin']],
     ['key'=>'settings',       'label'=>'Settings',            'icon'=>'ti-settings',         'roles'=>['admin']],
     ['key'=>'backup',         'label'=>'Backup & Restore',    'icon'=>'ti-database-export',  'roles'=>['admin']],
@@ -111,7 +110,7 @@ $_themeAccent   = $appSettings['theme_accent']   ?? '#4CAF50';
     <div class="nav-section">Main</div>
     <?php foreach($nav as $item): ?>
       <?php if(in_array($user['role'], $item['roles'])): ?>
-        <a href="<?= BASE_URL ?>/<?= $item['key'] ?>.php<?= $item['key']==='worker-report' ? '?estate='.$activeEstateId : ($item['key']==='tv-dashboard' ? '?estate='.$activeEstateId : '') ?>"
+        <a href="<?= BASE_URL ?>/<?= $item['key'] ?>.php<?= $item['key']==='tv-dashboard' ? '?estate='.$activeEstateId : '' ?>"
            class="nav-item <?= $currentPage===$item['key']?'active':'' ?>">
           <i class="ti <?= $item['icon'] ?>"></i>
           <span><?= $item['label'] ?></span>
