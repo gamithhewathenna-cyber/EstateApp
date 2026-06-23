@@ -353,7 +353,11 @@ require_once __DIR__ . '/includes/header.php';
 ?>
 
 <style>
-/* ── ASSIGNMENTS PAGE STYLES ── */
+/* ═══════════════════════════════════════════
+   ASSIGNMENTS PAGE — FULL MOBILE RESPONSIVE
+   ═══════════════════════════════════════════ */
+
+/* Main two-column grid */
 .assign-main-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -368,86 +372,170 @@ require_once __DIR__ . '/includes/header.php';
 .badge-rejected { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:700; display:inline-flex; align-items:center; gap:3px; }
 .badge-approved { background:#d1fae5; color:#065f46; border:1px solid #6ee7b7; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:700; display:inline-flex; align-items:center; gap:3px; }
 
-/* ── TABLET (≤1000px) ── */
-@media (max-width: 1000px) {
-  .assign-main-grid {
-    grid-template-columns: 1fr !important;
-  }
+/* Mobile "New Assignment" toggle button — hidden on desktop */
+.mobile-form-toggle { display: none; }
+
+/* Tab nav — always horizontal-scroll, never wraps */
+.assign-tabs {
+  display: flex; gap: 2px;
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+  padding: 3px; margin-bottom: 14px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.assign-tabs::-webkit-scrollbar { display: none; }
+.assign-tabs .tab-btn {
+  flex: 1; flex-shrink: 0; flex-basis: auto;
+  white-space: nowrap; text-decoration: none; text-align: center;
+  min-width: 0;
 }
 
-/* ── PHONE (≤600px) ── */
+/* Cost summary 4-col → 2-col → 1-col */
+.cost-summary-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 16px; }
+
+/* PDF print buttons always wrap */
+.cost-print-buttons { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; align-items: center; }
+
+/* Work-type breakdown bar rows */
+.wt-bar-row   { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.wt-bar-label { width: 110px; font-size: 12px; font-weight: 600; color: var(--green-900); flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wt-bar-track { flex: 1; height: 24px; background: var(--gray-100); border-radius: 4px; overflow: hidden; }
+.wt-bar-amount{ width: 90px; text-align: right; font-size: 12px; font-weight: 700; color: var(--green-700); flex-shrink: 0; }
+.wt-bar-qty   { width: 70px; text-align: right; font-size: 11px; color: var(--gray-400); flex-shrink: 0; }
+
+/* ── TABLET LANDSCAPE (≤1000px) ── */
+@media (max-width: 1000px) {
+  .assign-main-grid { grid-template-columns: 1fr !important; }
+  /* List first, form below */
+  .assign-form-col { order: 2; }
+  .assign-list-col { order: 1; }
+  /* Show the mobile toggle */
+  .mobile-form-toggle {
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 14px;
+  }
+  /* Shrink worker list height on tablet to save space */
+  #worker-list { max-height: 160px !important; }
+}
+
+/* ── LARGE PHONE (≤600px) ── */
 @media (max-width: 600px) {
-  /* Work type grid 2 columns */
+  /* Form panel */
+  .form-panel { padding: 14px !important; }
+  .edit-form-grid { grid-template-columns: 1fr !important; }
+
+  /* Work type cards */
   .work-type-grid { grid-template-columns: 1fr 1fr !important; gap: 6px; }
   .wt-name { font-size: 12px; }
   .wt-rate { font-size: 10px; }
+  .wt-card { padding: 8px 10px; }
 
   /* Worker list */
   #worker-list label { padding: 8px 10px; }
   #worker-list .avatar { display: none; }
 
-  /* Tabs scroll */
-  .tab-row { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; gap: 2px; }
-  .tab-btn { white-space: nowrap; font-size: 11px; padding: 6px 10px; flex-shrink: 0; }
-
-  /* Assignment items */
-  .assign-item { flex-wrap: wrap; gap: 6px; padding: 8px 0; }
-  .assign-name { font-size: 12px; }
-  .assign-sub  { font-size: 10px; }
-  .assign-pay  { font-size: 12px; }
-
-  /* Range date inputs stack */
-  .range-date-inputs { flex-direction: column !important; gap: 6px !important; }
+  /* Range date inputs — stack vertically */
+  .range-date-inputs { flex-direction: column !important; gap: 8px !important; align-items: stretch !important; }
   .range-date-inputs > div { width: 100% !important; min-width: 100% !important; }
-  .range-date-inputs input[type=date] { width: 100% !important; }
+  .range-date-inputs input[type=date],
+  .range-date-inputs button { width: 100%; }
 
-  /* Shortcut buttons wrap */
+  /* Shortcut buttons */
   .shortcut-btns { flex-wrap: wrap; gap: 4px; }
   .shortcut-btns a { font-size: 11px; padding: 4px 8px; }
+
+  /* ── SINGLE DAY: assignment row ── */
+  .assign-item {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 4px 8px;
+    padding: 10px 0;
+    align-items: flex-start;
+  }
+  .assign-item .avatar { flex-shrink: 0; align-self: center; }
+  .assign-item .assign-info { flex: 1; min-width: 0; }
+  .assign-item .assign-pay { flex-shrink: 0; font-size: 13px; font-weight: 700; color: var(--green-600); }
+  .assign-name { font-size: 12px; }
+  .assign-sub  { font-size: 10px; }
+  /* Admin actions row pushed to new line */
+  .assign-actions {
+    flex: 0 0 100%;
+    display: flex; gap: 4px; justify-content: flex-end;
+    padding-top: 6px; flex-wrap: wrap;
+  }
+
+  /* ── DATE RANGE: day header ── */
+  .range-day-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 6px !important;
+  }
+  .range-day-right {
+    align-self: stretch;
+    display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
+  }
 
   /* Date range table */
   .assign-table-wrap { font-size: 11px; }
   .assign-table-wrap th,
-  .assign-table-wrap td { padding: 5px 7px !important; }
+  .assign-table-wrap td { padding: 5px 6px !important; }
   .hide-mobile { display: none !important; }
 
-  /* Pending approval cards */
-  .approval-pending { flex-direction: column !important; gap: 8px; }
-  .approval-pending > div:last-child { width: 100%; display: flex; justify-content: flex-end; gap: 6px; }
+  /* ── APPROVALS: card layout ── */
+  .approval-card-body {
+    flex-wrap: wrap !important;
+    gap: 10px;
+  }
+  .approval-right {
+    flex: 0 0 100% !important;
+    text-align: left !important;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding-top: 10px;
+    border-top: 1px solid #fde68a;
+  }
+  .approval-right .pay-amt { font-size: 15px; font-weight: 700; }
+  .approval-right .approve-btns { margin-left: auto; display: flex; gap: 5px; }
 
-  /* Edit form grid */
-  .edit-form-grid { grid-template-columns: 1fr !important; }
-
-  /* Summary pills wrap */
+  /* Summary pills */
   .summary-pills { flex-wrap: wrap; gap: 5px; }
-
-  /* Form panel padding */
-  .form-panel { padding: 14px !important; }
 
   /* Calc box */
   .calc-box { flex-direction: column; gap: 6px; text-align: center; }
   .calc-amount { font-size: 18px !important; }
+
+  /* Bulk bar */
+  #bulk-bar { flex-direction: column; align-items: stretch !important; }
+  #bulk-bar form { flex-direction: column; gap: 8px !important; }
+  #bulk-bar .btn { width: 100%; justify-content: center; }
+
+  /* ── COST REPORT ── */
+  .cost-summary-grid { grid-template-columns: 1fr 1fr; }
+
+  /* Work-type breakdown bars — stack label on top */
+  .wt-bar-label { width: 100% !important; font-size: 11px !important; margin-bottom: 2px; }
+  .wt-bar-row   { flex-wrap: wrap; gap: 4px 8px; }
+  .wt-bar-qty   { display: none !important; }
+  .wt-bar-amount{ width: auto !important; }
+
+  /* Weekly breakdown — hide less-critical columns */
+  .weekly-table th:nth-child(3), .weekly-table td:nth-child(3),
+  .weekly-table th:nth-child(4), .weekly-table td:nth-child(4),
+  .weekly-table th:nth-child(5), .weekly-table td:nth-child(5),
+  .weekly-table th:nth-child(7), .weekly-table td:nth-child(7) { display: none !important; }
+
+  /* Monthly trend — hide less-critical columns */
+  .monthly-table th:nth-child(3), .monthly-table td:nth-child(3),
+  .monthly-table th:nth-child(4), .monthly-table td:nth-child(4),
+  .monthly-table th:nth-child(6), .monthly-table td:nth-child(6) { display: none !important; }
 }
 
 /* ── SMALL PHONE (≤400px) ── */
 @media (max-width: 400px) {
   .work-type-grid { grid-template-columns: 1fr 1fr !important; }
-  .tab-btn { font-size: 10px; padding: 5px 7px; }
   .assign-item { font-size: 11px; }
-}
-
-/* ── COST TAB SUMMARY GRID ── */
-.cost-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
-@media (max-width: 700px) {
-  .cost-summary-grid { grid-template-columns: 1fr 1fr; }
-}
-@media (max-width: 400px) {
   .cost-summary-grid { grid-template-columns: 1fr; }
-}
-
-/* Cost report print links wrap on mobile */
-@media (max-width: 600px) {
-  .cost-print-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+  .assign-tabs .tab-btn { font-size: 10px; padding: 5px 8px; }
 }
 </style>
 
@@ -462,7 +550,7 @@ require_once __DIR__ . '/includes/header.php';
 <div class="assign-main-grid">
 
 <!-- LEFT: FORM -->
-<div>
+<div class="assign-form-col" id="assign-form-col">
   <?php if ($editRow && $isAdmin): ?>
   <!-- EDIT FORM -->
   <div class="form-panel" style="border:2px solid var(--amber-200)">
@@ -645,24 +733,32 @@ require_once __DIR__ . '/includes/header.php';
 </div>
 
 <!-- RIGHT: ASSIGNMENT LIST -->
-<div>
+<div class="assign-list-col">
+  <!-- Mobile-only toggle to show/hide the New Assignment form -->
+  <div class="mobile-form-toggle">
+    <button type="button" class="btn btn-primary" style="width:100%;justify-content:center"
+            onclick="toggleMobileForm()">
+      <i class="ti ti-clipboard-plus" id="mobile-form-icon"></i>
+      <span id="mobile-form-label">New Assignment</span>
+    </button>
+  </div>
   <div class="card">
     <!-- TABS -->
-    <div style="display:flex;gap:2px;background:var(--gray-50);border-radius:var(--radius-md);padding:3px;margin-bottom:14px;flex-wrap:wrap">
-      <a class="tab-btn <?= $tab==='day'?'active':'' ?>" href="assignments.php?tab=day&date=<?= $selectedDate ?>" style="text-decoration:none;flex:1;text-align:center;white-space:nowrap">
+    <div class="assign-tabs">
+      <a class="tab-btn <?= $tab==='day'?'active':'' ?>" href="assignments.php?tab=day&date=<?= $selectedDate ?>">
         <i class="ti ti-calendar-event" style="font-size:13px;vertical-align:-2px"></i> Single Day
       </a>
-      <a class="tab-btn <?= $tab==='range'?'active':'' ?>" href="assignments.php?tab=range&from=<?= $dateFrom ?>&to=<?= $dateTo ?>" style="text-decoration:none;flex:1;text-align:center;white-space:nowrap">
+      <a class="tab-btn <?= $tab==='range'?'active':'' ?>" href="assignments.php?tab=range&from=<?= $dateFrom ?>&to=<?= $dateTo ?>">
         <i class="ti ti-calendar-stats" style="font-size:13px;vertical-align:-2px"></i> Date Range
       </a>
       <?php if ($isAdmin): ?>
-      <a class="tab-btn <?= $tab==='pending'?'active':'' ?>" href="assignments.php?tab=pending" style="text-decoration:none;flex:1;text-align:center;white-space:nowrap;position:relative">
+      <a class="tab-btn <?= $tab==='pending'?'active':'' ?>" href="assignments.php?tab=pending" style="position:relative">
         <i class="ti ti-clock-check" style="font-size:13px;vertical-align:-2px"></i> Approvals
         <?php if ($pendingCount > 0): ?>
         <span style="background:var(--red-400);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:20px;margin-left:4px"><?= $pendingCount ?></span>
         <?php endif; ?>
       </a>
-      <a class="tab-btn <?= $tab==='costs'?'active':'' ?>" href="assignments.php?tab=costs" style="text-decoration:none;flex:1;text-align:center;white-space:nowrap">
+      <a class="tab-btn <?= $tab==='costs'?'active':'' ?>" href="assignments.php?tab=costs">
         <i class="ti ti-chart-bar" style="font-size:13px;vertical-align:-2px"></i> Cost Report
       </a>
       <?php endif; ?>
@@ -750,7 +846,7 @@ require_once __DIR__ . '/includes/header.php';
     <?php elseif ($tab === 'pending' && $isAdmin): ?>
       <!-- PENDING APPROVALS LIST -->
       <?php foreach ($assignments as $a): ?>
-      <div class="assign-item approval-pending" style="border-radius:var(--radius-md);margin-bottom:8px;padding:10px">
+      <div class="assign-item approval-pending approval-card-body" style="border-radius:var(--radius-md);margin-bottom:8px;padding:10px">
         <div class="avatar" style="width:32px;height:32px;font-size:11px;flex-shrink:0"><?= initials($a['full_name']) ?></div>
         <div class="assign-info" style="flex:1;min-width:0">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -763,9 +859,9 @@ require_once __DIR__ . '/includes/header.php';
           <?php endif; ?>
           <div style="font-size:11px;color:var(--gray-400)">Submitted by: <strong><?= sanitize($a['created_by_name'] ?? 'Unknown') ?></strong></div>
         </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:14px;font-weight:700;color:var(--green-600);margin-bottom:6px"><?= money($a['payment']) ?></div>
-          <div style="display:flex;gap:5px">
+        <div class="approval-right" style="text-align:right;flex-shrink:0">
+          <div class="pay-amt" style="font-size:14px;font-weight:700;color:var(--green-600);margin-bottom:6px"><?= money($a['payment']) ?></div>
+          <div class="approve-btns" style="display:flex;gap:5px">
             <!-- Approve -->
             <form method="POST" style="display:inline">
               <input type="hidden" name="action" value="approve">
@@ -856,22 +952,24 @@ require_once __DIR__ . '/includes/header.php';
           </div>
           <div class="assign-pay" style="flex-shrink:0"><?= money($a['payment']) ?></div>
           <?php if($isAdmin): ?>
-          <form method="POST" style="display:inline;flex-shrink:0">
-            <input type="hidden" name="action" value="toggle_status">
-            <input type="hidden" name="id" value="<?= $a['id'] ?>">
-            <input type="hidden" name="redirect" value="/assignments.php?tab=day&date=<?= $selectedDate ?>">
-            <button type="submit" title="Toggle payment" style="border:none;cursor:pointer;border-radius:20px;padding:3px 8px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;gap:3px;<?= $isPaid?'background:#d1fae5;color:#065f46;border:1px solid #6ee7b7':'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5' ?>">
-              <i class="ti ti-<?= $isPaid?'circle-check':'clock' ?>" style="font-size:11px"></i>
-              <span class="hide-mobile"><?= $isPaid?'Paid':'Pending' ?></span>
-            </button>
-          </form>
-          <a href="assignments.php?tab=day&date=<?= $selectedDate ?>&edit=<?= $a['id'] ?>" class="btn btn-outline btn-sm" style="flex-shrink:0" title="Edit"><i class="ti ti-edit"></i></a>
-          <form method="POST" onsubmit="return confirm('Remove?')" style="display:inline;flex-shrink:0">
-            <input type="hidden" name="action" value="delete">
-            <input type="hidden" name="id" value="<?= $a['id'] ?>">
-            <input type="hidden" name="redirect" value="/assignments.php?tab=day&date=<?= $selectedDate ?>">
-            <button type="submit" class="assign-del"><i class="ti ti-trash"></i></button>
-          </form>
+          <div class="assign-actions">
+            <form method="POST" style="display:inline">
+              <input type="hidden" name="action" value="toggle_status">
+              <input type="hidden" name="id" value="<?= $a['id'] ?>">
+              <input type="hidden" name="redirect" value="/assignments.php?tab=day&date=<?= $selectedDate ?>">
+              <button type="submit" title="Toggle payment" style="border:none;cursor:pointer;border-radius:20px;padding:3px 9px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;gap:3px;<?= $isPaid?'background:#d1fae5;color:#065f46;border:1px solid #6ee7b7':'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5' ?>">
+                <i class="ti ti-<?= $isPaid?'circle-check':'clock' ?>" style="font-size:11px"></i>
+                <?= $isPaid?'Paid':'Pending' ?>
+              </button>
+            </form>
+            <a href="assignments.php?tab=day&date=<?= $selectedDate ?>&edit=<?= $a['id'] ?>" class="btn btn-outline btn-sm" title="Edit"><i class="ti ti-edit"></i></a>
+            <form method="POST" onsubmit="return confirm('Remove?')" style="display:inline">
+              <input type="hidden" name="action" value="delete">
+              <input type="hidden" name="id" value="<?= $a['id'] ?>">
+              <input type="hidden" name="redirect" value="/assignments.php?tab=day&date=<?= $selectedDate ?>">
+              <button type="submit" class="assign-del"><i class="ti ti-trash"></i></button>
+            </form>
+          </div>
           <?php endif; ?>
         </div>
         <?php endforeach; ?>
@@ -887,15 +985,15 @@ require_once __DIR__ . '/includes/header.php';
         $dayKg=array_sum(array_column(array_filter($dayRows,fn($r)=>strtolower($r['unit_label']??'')==='kg'),'quantity'));
       ?>
       <div style="margin-bottom:14px">
-        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--green-50);border-radius:8px;padding:7px 12px;margin-bottom:6px;cursor:pointer"
+        <div class="range-day-header" style="display:flex;align-items:center;justify-content:space-between;background:var(--green-50);border-radius:8px;padding:8px 12px;margin-bottom:6px;cursor:pointer;gap:6px"
              onclick="toggleDay('day-<?= str_replace('-','',$date) ?>')">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <i class="ti ti-calendar" style="color:var(--green-600);font-size:15px"></i>
-            <span style="font-size:13px;font-weight:700;color:var(--green-900)"><?= fmtDate($date) ?></span>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0">
+            <i class="ti ti-calendar" style="color:var(--green-600);font-size:15px;flex-shrink:0"></i>
+            <span style="font-size:13px;font-weight:700;color:var(--green-900);white-space:nowrap"><?= fmtDate($date) ?></span>
             <span class="pill pill-green" style="font-size:10px"><?= count($dayRows) ?> records</span>
             <?php if($dayKg>0)echo '<span class="pill pill-teal" style="font-size:10px">'.number_format($dayKg,1).' kg</span>'; ?>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div class="range-day-right" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex-shrink:0">
             <strong style="color:var(--green-600);font-size:13px"><?= money($dayPay) ?></strong>
             <?php if($dayPaid>0)echo '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;white-space:nowrap">✅ '.money($dayPaid).'</span>'; ?>
             <?php if($dayPending>0)echo '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;white-space:nowrap">⏳ '.money($dayPending).'</span>'; ?>
@@ -1073,17 +1171,17 @@ require_once __DIR__ . '/includes/header.php';
           $wtColors = ['var(--green-500)','var(--teal-500)','var(--amber-500)','#6D28D9','#1e40af','#e11d48'];
         ?>
         <?php foreach ($workTypeBreakdown as $i => $wt): ?>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          <div style="width:110px;font-size:12px;font-weight:600;color:var(--green-900);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?= sanitize($wt['work_type']) ?></div>
-          <div style="flex:1;height:24px;background:var(--gray-100);border-radius:4px;overflow:hidden">
+        <div class="wt-bar-row">
+          <div class="wt-bar-label"><?= sanitize($wt['work_type']) ?></div>
+          <div class="wt-bar-track">
             <div style="height:100%;width:<?= $maxCost>0?round($wt['total_cost']/$maxCost*100):0 ?>%;background:<?= $wtColors[$i%count($wtColors)] ?>;border-radius:4px;transition:width .4s;display:flex;align-items:center;padding-left:8px">
-              <?php if ($wt['total_cost']/$maxCost > 0.15): ?>
+              <?php if ($maxCost>0 && $wt['total_cost']/$maxCost > 0.15): ?>
               <span style="font-size:10px;font-weight:700;color:#fff"><?= money($wt['total_cost']) ?></span>
               <?php endif; ?>
             </div>
           </div>
-          <div style="width:90px;text-align:right;font-size:12px;font-weight:700;color:var(--green-700);flex-shrink:0"><?= money($wt['total_cost']) ?></div>
-          <div style="width:70px;text-align:right;font-size:11px;color:var(--gray-400);flex-shrink:0"><?= number_format($wt['total_qty'],1) ?> <?= sanitize($wt['unit_label']) ?></div>
+          <div class="wt-bar-amount"><?= money($wt['total_cost']) ?></div>
+          <div class="wt-bar-qty"><?= number_format($wt['total_qty'],1) ?> <?= sanitize($wt['unit_label']) ?></div>
         </div>
         <?php endforeach; ?>
       </div>
@@ -1096,7 +1194,7 @@ require_once __DIR__ . '/includes/header.php';
           <i class="ti ti-calendar-week" style="color:var(--green-500)"></i> Weekly Breakdown — <?= date('F Y', strtotime($selCostMonth.'-01')) ?>
         </div>
         <div style="background:#fff;border:1px solid #e8ede5;border-radius:var(--radius-md);overflow:hidden">
-        <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <table class="weekly-table" style="width:100%;border-collapse:collapse;font-size:12px">
           <thead>
             <tr style="background:var(--green-50)">
               <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--green-700);border-bottom:1px solid #e8ede5">Week</th>
@@ -1157,7 +1255,7 @@ require_once __DIR__ . '/includes/header.php';
           <i class="ti ti-chart-line" style="color:var(--green-500)"></i> Monthly Trend — <?= $selCostYear ?>
         </div>
         <div style="background:#fff;border:1px solid #e8ede5;border-radius:var(--radius-md);overflow:hidden">
-        <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <table class="monthly-table" style="width:100%;border-collapse:collapse;font-size:12px">
           <thead>
             <tr style="background:var(--green-50)">
               <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--green-700);border-bottom:1px solid #e8ede5">Month</th>
@@ -1630,6 +1728,46 @@ if (frm) frm.addEventListener('submit', function(e) {
     if (!anyKg) { e.preventDefault(); alert('Please enter KG for at least one selected worker.'); return; }
   }
 });
+
+// ── MOBILE FORM TOGGLE ──────────────────────────────────
+var _mobileFormOpen = false;
+function toggleMobileForm() {
+  var col   = document.getElementById('assign-form-col');
+  var icon  = document.getElementById('mobile-form-icon');
+  var label = document.getElementById('mobile-form-label');
+  if (!col) return;
+  _mobileFormOpen = !_mobileFormOpen;
+  col.style.display = _mobileFormOpen ? 'block' : 'none';
+  if (icon)  { icon.className  = _mobileFormOpen ? 'ti ti-x' : 'ti ti-clipboard-plus'; }
+  if (label) { label.textContent = _mobileFormOpen ? 'Close Form' : 'New Assignment'; }
+}
+// On desktop (>1000px) always show form; on mobile hide initially
+function initMobileFormState() {
+  var col = document.getElementById('assign-form-col');
+  if (!col) return;
+  if (window.innerWidth <= 1000) {
+    col.style.display = 'none'; // hidden by default on mobile
+    _mobileFormOpen = false;
+  } else {
+    col.style.display = ''; // always visible on desktop
+  }
+}
+initMobileFormState();
+window.addEventListener('resize', initMobileFormState);
+
+// toggleDay — accordion for date-range groups
+function toggleDay(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+
+// toggleRejectForm — inline reject reason expansion
+function toggleRejectForm(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
 </script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
