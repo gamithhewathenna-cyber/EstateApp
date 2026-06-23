@@ -80,7 +80,7 @@ $allRecords = DB::fetchAll("SELECT
     wt.name as work_type,
     wt.unit_label,
     COALESCE(w.full_name, TRIM(REPLACE(SUBSTRING_INDEX(IFNULL(da.notes,''),'|',1),'TEMP:','')), 'Temp') as worker_name,
-    CASE WHEN da.worker_id IS NULL THEN 1 ELSE 0 END as is_temp,
+    CASE WHEN (da.worker_id IS NULL OR da.worker_id = 0) THEN 1 ELSE 0 END as is_temp,
     da.quantity,
     da.payment,
     da.notes,
@@ -135,20 +135,40 @@ foreach ($allRecords as $r) {
     $byWeek[$wn]['total']                  += $r['payment'];
 }
 
+// Build week labels from ALL weeks BEFORE filtering, so "Week 2" stays "Week 2"
+// even when only that week is being displayed.
+$allWeekKeys = array_keys($byWeek);
+$weekLabels  = [];
+foreach ($allWeekKeys as $i => $wk) {
+    $weekLabels[$wk] = 'Week ' . ($i + 1);
+}
+
+// Keep the full set for the toolbar navigation buttons
+$allByWeekForToolbar = $byWeek;
+
 // Filter to specific week if requested
 if ($selWeek && isset($byWeek[$selWeek])) {
     $byWeek = [$selWeek => $byWeek[$selWeek]];
+    // Re-scope expense records to the selected week only
+    $filteredExpenses = array_filter($expenseRecords, fn($ex) => $ex['week_num'] == $selWeek);
+    $expByWeek = [];
+    foreach ($filteredExpenses as $ex) {
+        $expByWeek[$ex['week_num']][$ex['expense_date']][] = $ex;
+    }
+} else {
+    $filteredExpenses = $expenseRecords;
 }
 
-$grandTotal = array_sum(array_column($allRecords, 'payment'));
-$grandKg    = array_sum(array_map(fn($r)=>$r['unit_lower']==='kg'?$r['quantity']:0, $allRecords));
-
-// Week number within month (1st week = Week 1)
-$weekKeys   = array_keys($byWeek);
-$weekLabels = [];
-foreach ($weekKeys as $i => $wk) {
-    $weekLabels[$wk] = 'Week ' . ($i+1);
+// Calculate all totals from the FILTERED (possibly week-scoped) data
+$filteredRecords = [];
+foreach ($byWeek as $wdata) {
+    foreach ($wdata['dates'] as $dayData) {
+        $filteredRecords = array_merge($filteredRecords, $dayData['rows']);
+    }
 }
+$grandTotal       = array_sum(array_column($filteredRecords, 'payment'));
+$grandKg          = array_sum(array_map(fn($r) => $r['unit_lower'] === 'kg' ? $r['quantity'] : 0, $filteredRecords));
+$totalExpensesAmt = array_sum(array_column(array_values($filteredExpenses), 'amount'));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -394,7 +414,7 @@ body {
   <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
     <a href="cost-report-pdf.php?section=<?= $selSection ?>&month=<?= $selMonth ?>"
        style="color:<?= !$selWeek?'#A5D6A7':'rgba(255,255,255,.5)' ?>;font-size:11px;padding:4px 10px;border-radius:12px;text-decoration:none;border:1px solid rgba(255,255,255,<?= !$selWeek?.4:.2 ?>)">All Weeks</a>
-    <?php foreach ($byWeek as $wk => $wdata): ?>
+    <?php foreach ($allByWeekForToolbar as $wk => $wdata): ?>
     <a href="cost-report-pdf.php?section=<?= $selSection ?>&month=<?= $selMonth ?>&week=<?= $wk ?>"
        style="color:<?= $selWeek==$wk?'#A5D6A7':'rgba(255,255,255,.5)' ?>;font-size:11px;padding:4px 10px;border-radius:12px;text-decoration:none;border:1px solid rgba(255,255,255,<?= $selWeek==$wk?.4:.2 ?>)"><?= $weekLabels[$wk] ?></a>
     <?php endforeach; ?>
@@ -427,7 +447,7 @@ body {
 
   <!-- ── SUMMARY BAR ── -->
   <?php
-  $totalPlucking = array_sum(array_map(fn($r)=>strtolower($r['unit_label'])==='kg'?$r['payment']:0, $allRecords));
+  $totalPlucking = array_sum(array_map(fn($r) => strtolower($r['unit_label']) === 'kg' ? $r['payment'] : 0, $filteredRecords));
   $totalOther    = $grandTotal - $totalPlucking;
   ?>
   <div class="summary-bar">
