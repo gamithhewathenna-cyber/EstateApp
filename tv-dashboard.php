@@ -37,96 +37,67 @@ $logoUrl  = $logoFile ? BASE_URL . '/assets/img/' . $logoFile . '?v=' . $logoTs 
 
 // ── DATA ──────────────────────────────────────
 
-// Resolve plucking work-type IDs for this estate (avoids hardcoding work_type_id=1)
-$kgTypeRows  = DB::fetchAll("SELECT id FROM work_types WHERE estate_id=? AND LOWER(unit_label)='kg'", [$estateId]);
-$kgTypeIds   = array_map('intval', array_column($kgTypeRows, 'id'));
-$kgTypeIdStr = $kgTypeIds ? implode(',', $kgTypeIds) : '0';
-
-// Yearly KG
-$yearlyKg = DB::fetchOne("SELECT COALESCE(SUM(quantity),0) as total
-    FROM daily_assignments
-    WHERE estate_id=? AND approval_status='approved'
-    AND work_type_id IN ($kgTypeIdStr)
-    AND YEAR(assignment_date)=YEAR(CURDATE())", [$estateId]);
-
 // Monthly total KG
 $monthKg = DB::fetchOne("SELECT COALESCE(SUM(quantity),0) as total
     FROM daily_assignments
-    WHERE estate_id=? AND approval_status='approved'
-    AND work_type_id IN ($kgTypeIdStr)
+    WHERE estate_id=? AND approval_status='approved' AND work_type_id=1
     AND DATE_FORMAT(assignment_date,'%Y-%m')=?", [$estateId, $month]);
 
 // Today KG
 $todayKg = DB::fetchOne("SELECT COALESCE(SUM(quantity),0) as total
     FROM daily_assignments
-    WHERE estate_id=? AND approval_status='approved'
-    AND work_type_id IN ($kgTypeIdStr)
+    WHERE estate_id=? AND approval_status='approved' AND work_type_id=1
     AND assignment_date=?", [$estateId, $today]);
 
-// Monthly assignment (payroll) cost
-$monthPayroll = DB::fetchOne("SELECT COALESCE(SUM(payment),0) as total
-    FROM daily_assignments
-    WHERE estate_id=? AND approval_status='approved'
-    AND DATE_FORMAT(assignment_date,'%Y-%m')=?", [$estateId, $month]);
-
-// Weekly expenses (Mon–Sun of current week)
-$tvWeekStart  = date('Y-m-d', strtotime('monday this week'));
-$tvWeekEnd    = date('Y-m-d', strtotime('sunday this week'));
-$weeklyExp    = DB::fetchOne("SELECT COALESCE(SUM(amount),0) as total
-    FROM expenses WHERE estate_id=? AND expense_date BETWEEN ? AND ?",
-    [$estateId, $tvWeekStart, $tvWeekEnd]);
-
-// Section-wise KG + cost this month
+// Section-wise KG this month
 $sections = DB::fetchAll("SELECT p.name, p.id,
-    COALESCE(SUM(CASE WHEN da.work_type_id IN ($kgTypeIdStr) THEN da.quantity ELSE 0 END),0) as kg,
-    COALESCE(SUM(da.payment),0) as cost,
+    COALESCE(SUM(da.quantity),0) as kg,
     COUNT(DISTINCT da.worker_id) as workers,
     COUNT(DISTINCT da.assignment_date) as days
     FROM plantations p
     LEFT JOIN daily_assignments da ON p.id=da.plantation_id
         AND da.approval_status='approved'
+        AND da.work_type_id=1
         AND DATE_FORMAT(da.assignment_date,'%Y-%m')=?
     WHERE p.estate_id=? AND p.is_active=1
-    GROUP BY p.id ORDER BY kg DESC", [$month, $estateId]);
+    GROUP BY p.id ORDER BY kg DESC", [$estateId, $month]);
 
 $totalSections = count($sections);
-$maxSectionKg  = max(array_column($sections,'kg')   ?: [1]);
-$maxSectionCost= max(array_column($sections,'cost') ?: [1]);
+$maxSectionKg  = max(array_column($sections,'kg') ?: [1]);
 
-// Person-wise KG this month (top 20) — including temp workers
-$workers = DB::fetchAll("SELECT
-    COALESCE(w.full_name, TRIM(REPLACE(SUBSTRING_INDEX(IFNULL(da.notes,''),'|',1),'TEMP:',''))) as full_name,
-    COALESCE(SUM(CASE WHEN da.work_type_id IN ($kgTypeIdStr) THEN da.quantity ELSE 0 END),0) as total_kg,
-    COUNT(DISTINCT da.assignment_date) as days
-    FROM daily_assignments da
-    LEFT JOIN workers w ON da.worker_id=w.id AND da.worker_id > 0
-    WHERE da.estate_id=? AND da.approval_status='approved'
-    AND da.work_type_id IN ($kgTypeIdStr)
+// Person-wise KG this month (top 20)
+$workers = DB::fetchAll("SELECT w.full_name,
+    COALESCE(SUM(da.quantity),0) as total_kg,
+    COUNT(DISTINCT da.assignment_date) as days,
+    MAX(p.name) as last_section
+    FROM workers w
+    JOIN daily_assignments da ON w.id=da.worker_id
+    JOIN plantations p ON da.plantation_id=p.id
+    WHERE da.estate_id=? AND da.approval_status='approved' AND da.work_type_id=1
     AND DATE_FORMAT(da.assignment_date,'%Y-%m')=?
-    GROUP BY da.worker_id, SUBSTRING_INDEX(IFNULL(da.notes,''),'|',1)
+    GROUP BY w.id
     ORDER BY total_kg DESC
     LIMIT 20", [$estateId, $month]);
 
-$maxWorkerKg  = max(array_column($workers,'total_kg') ?: [1]);
+$maxWorkerKg = max(array_column($workers,'total_kg') ?: [1]);
 $totalWorkers = count($workers);
 
 // Daily KG trend (this month)
 $dailyTrend = DB::fetchAll("SELECT assignment_date, SUM(quantity) as kg
     FROM daily_assignments
-    WHERE estate_id=? AND approval_status='approved'
-    AND work_type_id IN ($kgTypeIdStr)
+    WHERE estate_id=? AND approval_status='approved' AND work_type_id=1
     AND DATE_FORMAT(assignment_date,'%Y-%m')=?
     GROUP BY assignment_date ORDER BY assignment_date", [$estateId, $month]);
-$maxDailyKg = max(array_column($dailyTrend,'kg') ?: [1]);
+$maxDailyKg  = max(array_column($dailyTrend,'kg') ?: [1]);
 
-// Fertilizer reminders (estate-filtered subquery)
+// Fertilizer reminders
 $fertReminders = DB::fetchAll("SELECT fc.*, p.name as plantation_name
     FROM fertilizer_cycles fc
     JOIN plantations p ON fc.plantation_id=p.id
-    JOIN (SELECT plantation_id, MAX(id) as max_id FROM fertilizer_cycles WHERE estate_id=? GROUP BY plantation_id) latest
+    JOIN (SELECT plantation_id, MAX(id) as max_id FROM fertilizer_cycles GROUP BY plantation_id) latest
         ON fc.id=latest.max_id
     WHERE fc.estate_id=? AND p.estate_id=? AND p.is_active=1 AND fc.next_due_date IS NOT NULL
-    ORDER BY fc.next_due_date ASC", [$estateId, $estateId, $estateId]);
+    ORDER BY fc.next_due_date ASC", [$estateId, $estateId]);
 
 // Color palette for sections
 $sectionColors = ['#4CAF50','#2196F3','#FF9800','#9C27B0','#F44336','#00BCD4'];
@@ -496,50 +467,44 @@ body::before {
   <!-- ── MAIN GRID ── -->
   <div class="main-grid">
 
-    <!-- CARD 1: KG Summary (Yearly + Monthly + Cost + Expenses) -->
+    <!-- CARD 1: Total Monthly KG -->
     <div class="card card-total-kg">
       <div class="card-label">
-        <i class="ti ti-calendar-stats"></i> <?= date('Y') ?> Total KG
+        <i class="ti ti-weight"></i> Total KG This Month
       </div>
       <div>
-        <span class="kg-big"><?= number_format((float)$yearlyKg['total'], 0) ?></span>
+        <span class="kg-big"><?= number_format((float)$monthKg['total'], 0) ?></span>
         <span class="kg-unit">kg</span>
       </div>
-      <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div style="background:rgba(255,255,255,0.07);border-radius:10px;padding:8px 10px">
-          <div style="font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px"><i class="ti ti-leaf" style="font-size:11px"></i> Month KG</div>
-          <div style="font-size:18px;font-weight:800;color:var(--green-200)"><?= number_format((float)$monthKg['total'],0) ?> kg</div>
-          <div style="font-size:10px;color:var(--text-faint);margin-top:2px">Today: <?= number_format((float)$todayKg['total'],1) ?> kg</div>
-        </div>
-        <div style="background:rgba(255,255,255,0.07);border-radius:10px;padding:8px 10px">
-          <div style="font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px"><i class="ti ti-cash" style="font-size:11px"></i> Assignment Cost</div>
-          <div style="font-size:18px;font-weight:800;color:var(--amber)"><?= 'Rs.'.number_format((float)$monthPayroll['total'],0) ?></div>
-          <div style="font-size:10px;color:var(--text-faint);margin-top:2px"><?= $monthLabel ?> payroll</div>
-        </div>
-        <div style="background:rgba(255,255,255,0.07);border-radius:10px;padding:8px 10px;grid-column:1/-1">
-          <div style="font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px"><i class="ti ti-receipt" style="font-size:11px"></i> Weekly Expenses</div>
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <div style="font-size:18px;font-weight:800;color:#F87171"><?= 'Rs.'.number_format((float)$weeklyExp['total'],0) ?></div>
-            <div style="font-size:10px;color:var(--text-faint)">Mon <?= date('d M', strtotime($tvWeekStart)) ?> – <?= date('d M', strtotime($tvWeekEnd)) ?></div>
-          </div>
-        </div>
+      <div class="kg-today">
+        <i class="ti ti-sun" style="font-size:14px;color:var(--amber)"></i>
+        Today: <strong><?= number_format((float)$todayKg['total'], 1) ?> kg</strong>
       </div>
-      <?php
-      $daysInMonth   = (int)date('t');
-      $dayOfMonth    = (int)date('j');
-      $monthProgress = round($dayOfMonth / $daysInMonth * 100);
-      $avgDaily      = $dayOfMonth > 0 ? (float)$monthKg['total'] / $dayOfMonth : 0;
-      $projected     = round($avgDaily * $daysInMonth);
-      ?>
-      <div class="kg-progress-wrap" style="margin-top:10px">
+      <div class="kg-progress-wrap">
+        <?php
+        $daysInMonth   = (int)date('t');
+        $dayOfMonth    = (int)date('j');
+        $monthProgress = round($dayOfMonth / $daysInMonth * 100);
+        $avgDaily      = $dayOfMonth > 0 ? (float)$monthKg['total'] / $dayOfMonth : 0;
+        $projected     = round($avgDaily * $daysInMonth);
+        ?>
         <div class="kg-progress-label">
           <span>Month Progress</span>
-          <span><?= $dayOfMonth ?>/<?= $daysInMonth ?> days · Projected <?= number_format($projected,0) ?> kg</span>
+          <span><?= $dayOfMonth ?>/<?= $daysInMonth ?> days</span>
         </div>
         <div class="kg-progress-bar">
           <div class="kg-progress-fill" style="width:<?= $monthProgress ?>%"></div>
         </div>
+        <div style="font-size:11px;color:var(--text-faint);margin-top:5px">
+          Avg <?= number_format($avgDaily,1) ?> kg/day · Projected <?= number_format($projected,0) ?> kg
+        </div>
       </div>
+      <?php if ($totalWorkers > 0): ?>
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);font-size:12px;color:var(--text-dim);display:flex;gap:16px">
+        <span><i class="ti ti-users" style="font-size:13px;vertical-align:-2px"></i> <?= $totalWorkers ?> workers</span>
+        <span><i class="ti ti-trees" style="font-size:13px;vertical-align:-2px"></i> <?= $totalSections ?> sections</span>
+      </div>
+      <?php endif; ?>
     </div>
 
     <!-- CARD 2: Section Status -->
@@ -566,9 +531,8 @@ body::before {
                 <div class="section-bar-fill" style="width:<?= $pct ?>%;background:<?= $color ?>;opacity:.8"></div>
               </div>
             </div>
-            <div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.07)">
-              <div style="font-size:11px;font-weight:700;color:var(--amber)">Rs. <?= number_format((float)$s['cost'],0) ?></div>
-              <div class="section-meta" style="margin-top:2px"><?= $s['workers'] ?> workers · <?= $s['days'] ?> days</div>
+            <div class="section-meta">
+              <?= $s['workers'] ?> workers · <?= $s['days'] ?> days
             </div>
           </div>
         </div>
@@ -692,18 +656,12 @@ body::before {
   <div class="ticker-label"><i class="ti ti-leaf"></i> &nbsp;Live</div>
   <div class="ticker-scroll">
     <div class="ticker-inner">
-      <span>📅 <?= date('Y') ?> Yearly KG: <strong><?= number_format((float)$yearlyKg['total'],0) ?> kg</strong></span>
-      <span class="ticker-sep">·</span>
-      <span>📊 <?= $monthLabel ?> KG: <strong><?= number_format((float)$monthKg['total'],1) ?> kg</strong></span>
+      <span>📊 Monthly Total: <strong><?= number_format((float)$monthKg['total'],1) ?> kg</strong></span>
       <span class="ticker-sep">·</span>
       <span>☀️ Today: <strong><?= number_format((float)$todayKg['total'],1) ?> kg</strong></span>
       <span class="ticker-sep">·</span>
-      <span>💰 Assignment Cost: <strong>Rs. <?= number_format((float)$monthPayroll['total'],0) ?></strong></span>
-      <span class="ticker-sep">·</span>
-      <span>🧾 Weekly Expenses: <strong>Rs. <?= number_format((float)$weeklyExp['total'],0) ?></strong></span>
-      <span class="ticker-sep">·</span>
       <?php foreach ($sections as $s): ?>
-      <span>🌿 <?= sanitize($s['name']) ?>: <strong><?= number_format((float)$s['kg'],0) ?> kg</strong> · Rs. <?= number_format((float)$s['cost'],0) ?></span>
+      <span>🌿 <?= sanitize($s['name']) ?>: <strong><?= number_format((float)$s['kg'],0) ?> kg</strong></span>
       <span class="ticker-sep">·</span>
       <?php endforeach; ?>
       <?php if ($workers): ?>
