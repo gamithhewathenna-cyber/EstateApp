@@ -61,12 +61,12 @@ $maxKg = max(array_column($plantKg,'kg') ?: [1]);
 // Top workers in range
 $topWorkers = DB::fetchAll("SELECT 
     COALESCE(w.full_name, TRIM(REPLACE(SUBSTRING_INDEX(da.notes,'|',1),'TEMP:',''))) as full_name,
-    CASE WHEN da.worker_id IS NULL THEN 1 ELSE 0 END as is_temp,
+    CASE WHEN (da.worker_id IS NULL OR da.worker_id = 0) THEN 1 ELSE 0 END as is_temp,
     SUM(da.quantity) as total_kg,
     SUM(da.payment) as total_pay,
     COUNT(DISTINCT da.assignment_date) as days
     FROM daily_assignments da
-    LEFT JOIN workers w ON da.worker_id=w.id AND da.worker_id IS NOT NULL
+    LEFT JOIN workers w ON da.worker_id=w.id AND da.worker_id > 0
     WHERE da.estate_id=? AND da.approval_status='approved' AND da.work_type_id IN (SELECT id FROM work_types WHERE estate_id=da.estate_id AND LOWER(unit_label)='kg') AND da.assignment_date BETWEEN ? AND ?
     GROUP BY da.worker_id, SUBSTRING_INDEX(da.notes,'|',1)
     ORDER BY total_kg DESC LIMIT 5", [$estateId,$dateFrom,$dateTo]);

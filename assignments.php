@@ -5,13 +5,12 @@ require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/functions.php';
 $pageTitle = 'Daily Assignments';
 
-// Re-read role from DB FIRST — before any POST handling to avoid stale session
+// Auth::check() re-reads global role from DB and handles session/estate redirect
 Auth::check();
 $estateId = Auth::estateId();
 $uid      = (int)(Auth::user()['id']);
-$freshUser = DB::fetchOne("SELECT role FROM users WHERE id=?", [$uid]);
-$_SESSION['user_role'] = $freshUser['role'] ?? $_SESSION['user_role'];
-$isAdmin  = ($_SESSION['user_role'] === 'admin');
+// Use estate-specific role (active_estate_role) when set, fallback to global role
+$isAdmin  = Auth::isAdmin();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -199,9 +198,9 @@ $workTypes   = DB::fetchAll("SELECT * FROM work_types WHERE estate_id=? AND is_a
 $pendingCount = DB::fetchOne("SELECT COUNT(*) as cnt FROM daily_assignments WHERE estate_id=? AND approval_status='pending'", [$estateId])['cnt'] ?? 0;
 
 // Fetch assignments
-// Name expression: COALESCE handles both NULL worker_id (temp) and deleted workers
+// Name expression: temp workers stored with worker_id=0, regular workers with worker_id>0
 $nameExpr = "COALESCE(w.full_name, TRIM(REPLACE(SUBSTRING_INDEX(IFNULL(da.notes,''),'|',1),'TEMP:','')), '') as full_name,
-        CASE WHEN da.worker_id IS NULL THEN 1 ELSE 0 END as is_temp";
+        CASE WHEN (da.worker_id IS NULL OR da.worker_id = 0) THEN 1 ELSE 0 END as is_temp";
 
 if ($tab === 'range') {
     $assignments = DB::fetchAll("SELECT da.*, $nameExpr,
@@ -871,7 +870,7 @@ require_once __DIR__ . '/includes/header.php';
       foreach($byDate as $date=>$dayRows):
         $dayPay=$dayPaid=$dayPending=0;
         foreach($dayRows as $r){$dayPay+=$r['payment'];if($r['payment_status']==='paid')$dayPaid+=$r['payment'];else $dayPending+=$r['payment'];}
-        $dayKg=array_sum(array_column(array_filter($dayRows,fn($r)=>$r['work_type_id']==1),'quantity'));
+        $dayKg=array_sum(array_column(array_filter($dayRows,fn($r)=>strtolower($r['unit_label']??'')==='kg'),'quantity'));
       ?>
       <div style="margin-bottom:14px">
         <div style="display:flex;align-items:center;justify-content:space-between;background:var(--green-50);border-radius:8px;padding:7px 12px;margin-bottom:6px;cursor:pointer"

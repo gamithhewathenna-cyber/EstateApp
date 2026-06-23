@@ -4,11 +4,11 @@ require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/functions.php';
 $pageTitle = 'Worker Management';
+Auth::check();
 $estateId = Auth::estateId();
 
 // Handle POST actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    Auth::check();
     $action = $_POST['action'] ?? '';
 
     if ($action === 'add' || $action === 'edit') {
@@ -45,7 +45,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Fetch workers
 $search = trim($_GET['search'] ?? '');
 $status = $_GET['status'] ?? 'all';
-$params = [$estateId];
 $where  = ['estate_id = ?'];
 $params = [$estateId];
 if ($search) {

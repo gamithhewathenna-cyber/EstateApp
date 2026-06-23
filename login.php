@@ -6,20 +6,6 @@ require_once __DIR__ . '/includes/functions.php';
 
 Auth::start();
 
-// ── REMEMBER ME TABLE — create if not exists ──────
-try {
-    DB::execute("CREATE TABLE IF NOT EXISTS remember_tokens (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
-        token VARCHAR(128) NOT NULL UNIQUE,
-        ip_address VARCHAR(45) NOT NULL,
-        user_agent VARCHAR(255) NOT NULL,
-        expires_at DATETIME NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", []);
-} catch (Exception $e) {}
-
 function getClientIP() {
     foreach (['HTTP_CF_CONNECTING_IP','HTTP_X_FORWARDED_FOR','HTTP_X_REAL_IP','REMOTE_ADDR'] as $k) {
         if (!empty($_SERVER[$k])) return trim(explode(',',$_SERVER[$k])[0]);

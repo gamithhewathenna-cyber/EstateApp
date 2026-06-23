@@ -6,13 +6,6 @@ require_once __DIR__ . '/includes/functions.php';
 $pageTitle = 'Expenses';
 $estateId = Auth::estateId();
 
-// Update expense_type ENUM to include new categories (run once)
-try {
-    DB::execute("ALTER TABLE expenses MODIFY COLUMN expense_type 
-        ENUM('Spray Can','Pohora','Dolomite','Food','Transport','Equipment','Miscellaneous') 
-        NOT NULL DEFAULT 'Miscellaneous'", []);
-} catch (Exception $e) { /* already updated */ }
-
 // Predefined items with default prices (editable per entry)
 $presetItems = [
     'Spray Can'     => ['icon'=>'ti-spray',        'color'=>'var(--teal-50)',  'text'=>'var(--teal-600)',  'default'=>0],

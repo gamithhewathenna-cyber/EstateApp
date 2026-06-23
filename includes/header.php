@@ -37,10 +37,10 @@ try {
 } catch (Exception $e) { $appSettings = []; }
 
 // Fertilizer due count for badge
-$fertDue = DB::fetchOne("SELECT COUNT(*) as cnt FROM fertilizer_cycles fc 
-    JOIN (SELECT plantation_id, MAX(id) as max_id FROM fertilizer_cycles GROUP BY plantation_id) latest 
-    ON fc.id = latest.max_id 
-    WHERE fc.estate_id=? AND fc.next_due_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)", [$activeEstateId]);
+$fertDue = DB::fetchOne("SELECT COUNT(*) as cnt FROM fertilizer_cycles fc
+    JOIN (SELECT plantation_id, MAX(id) as max_id FROM fertilizer_cycles WHERE estate_id=? GROUP BY plantation_id) latest
+    ON fc.id = latest.max_id
+    WHERE fc.estate_id=? AND fc.next_due_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)", [$activeEstateId, $activeEstateId]);
 $fertCount = $fertDue['cnt'] ?? 0;
 
 // Use estate-specific settings (already loaded above)

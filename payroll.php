@@ -4,11 +4,11 @@ require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/functions.php';
 $pageTitle = 'Payroll';
+Auth::check();
 $estateId = Auth::estateId();
 
 // Handle payment status updates
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    Auth::check();
     $action = $_POST['action'] ?? '';
 
     // Mark single record paid/pending
@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id     = (int)($_POST['id'] ?? 0);
         $status = $_POST['status'] ?? 'pending';
         if (!in_array($status, ['paid','pending'])) $status = 'pending';
-        DB::execute("UPDATE daily_assignments SET payment_status=? WHERE id=?", [$status, $id]);
+        DB::execute("UPDATE daily_assignments SET payment_status=? WHERE id=? AND estate_id=?", [$status, $id, $estateId]);
         flash('success', 'Payment marked as ' . ucfirst($status) . '.');
         redirect('/payroll.php?month=' . ($_POST['month'] ?? date('Y-m')) . '&tab=' . ($_POST['tab'] ?? 'worker'));
     }
@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'mark_worker_paid') {
         $wid   = (int)($_POST['worker_id'] ?? 0);
         $month = $_POST['month'] ?? date('Y-m');
-        DB::execute("UPDATE daily_assignments SET payment_status='paid' WHERE worker_id=? AND DATE_FORMAT(assignment_date,'%Y-%m')=?", [$wid, $month]);
+        DB::execute("UPDATE daily_assignments SET payment_status='paid' WHERE worker_id=? AND estate_id=? AND DATE_FORMAT(assignment_date,'%Y-%m')=?", [$wid, $estateId, $month]);
         flash('success', 'All payments marked as Paid for this worker.');
         redirect('/payroll.php?month=' . $month . '&tab=worker');
     }
@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Mark ALL for a month as paid
     if ($action === 'mark_all_paid') {
         $month = $_POST['month'] ?? date('Y-m');
-        DB::execute("UPDATE daily_assignments SET payment_status='paid' WHERE DATE_FORMAT(assignment_date,'%Y-%m')=?", [$month]);
+        DB::execute("UPDATE daily_assignments SET payment_status='paid' WHERE estate_id=? AND DATE_FORMAT(assignment_date,'%Y-%m')=?", [$estateId, $month]);
         flash('success', 'All payments marked as Paid for ' . date('F Y', strtotime($month . '-01')) . '.');
         redirect('/payroll.php?month=' . $month . '&tab=worker');
     }
@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Mark ALL for a month as pending (reset)
     if ($action === 'mark_all_pending') {
         $month = $_POST['month'] ?? date('Y-m');
-        DB::execute("UPDATE daily_assignments SET payment_status='pending' WHERE DATE_FORMAT(assignment_date,'%Y-%m')=?", [$month]);
+        DB::execute("UPDATE daily_assignments SET payment_status='pending' WHERE estate_id=? AND DATE_FORMAT(assignment_date,'%Y-%m')=?", [$estateId, $month]);
         flash('success', 'All payments reset to Pending.');
         redirect('/payroll.php?month=' . $month . '&tab=worker');
     }
@@ -50,25 +50,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $selMonth = $_GET['month'] ?? date('Y-m');
 $tab      = $_GET['tab']   ?? 'worker';
 
-// Summary totals
-$totals = DB::fetchOne("SELECT 
-    COALESCE(SUM(payment),0) as total_pay,
-    COALESCE(SUM(CASE WHEN payment_status='paid'    THEN payment ELSE 0 END),0) as paid_pay,
-    COALESCE(SUM(CASE WHEN payment_status='pending' THEN payment ELSE 0 END),0) as pending_pay,
-    COALESCE(SUM(CASE WHEN work_type_id=1 THEN payment ELSE 0 END),0) as plucking_pay,
-    COALESCE(SUM(CASE WHEN work_type_id!=1 THEN payment ELSE 0 END),0) as other_pay,
-    COUNT(DISTINCT worker_id) as workers,
-    COUNT(DISTINCT assignment_date) as days,
-    SUM(CASE WHEN payment_status='paid' THEN 1 ELSE 0 END) as paid_count,
-    SUM(CASE WHEN payment_status='pending' THEN 1 ELSE 0 END) as pending_count
-    FROM daily_assignments WHERE estate_id=? AND approval_status='approved' AND DATE_FORMAT(assignment_date,'%Y-%m')=?", [$estateId, $selMonth]);
+// Summary totals — use unit_label='kg' to identify plucking across all estates
+$totals = DB::fetchOne("SELECT
+    COALESCE(SUM(da.payment),0) as total_pay,
+    COALESCE(SUM(CASE WHEN da.payment_status='paid'    THEN da.payment ELSE 0 END),0) as paid_pay,
+    COALESCE(SUM(CASE WHEN da.payment_status='pending' THEN da.payment ELSE 0 END),0) as pending_pay,
+    COALESCE(SUM(CASE WHEN LOWER(wt.unit_label)='kg' THEN da.payment ELSE 0 END),0) as plucking_pay,
+    COALESCE(SUM(CASE WHEN LOWER(wt.unit_label)!='kg' THEN da.payment ELSE 0 END),0) as other_pay,
+    COUNT(DISTINCT da.worker_id) as workers,
+    COUNT(DISTINCT da.assignment_date) as days,
+    SUM(CASE WHEN da.payment_status='paid' THEN 1 ELSE 0 END) as paid_count,
+    SUM(CASE WHEN da.payment_status='pending' THEN 1 ELSE 0 END) as pending_count
+    FROM daily_assignments da
+    JOIN work_types wt ON da.work_type_id = wt.id
+    WHERE da.estate_id=? AND da.approval_status='approved' AND DATE_FORMAT(da.assignment_date,'%Y-%m')=?", [$estateId, $selMonth]);
 
-// Worker-wise payroll
+// Worker-wise payroll — use unit_label='kg' for plucking detection
 $workerPayroll = DB::fetchAll("SELECT w.full_name, w.id as worker_id,
     COUNT(DISTINCT da.assignment_date) as days,
-    COALESCE(SUM(CASE WHEN da.work_type_id=1 THEN da.quantity ELSE 0 END),0) as total_kg,
-    COALESCE(SUM(CASE WHEN da.work_type_id=1 THEN da.payment ELSE 0 END),0) as plucking_pay,
-    COALESCE(SUM(CASE WHEN da.work_type_id!=1 THEN da.payment ELSE 0 END),0) as other_pay,
+    COALESCE(SUM(CASE WHEN LOWER(wt.unit_label)='kg' THEN da.quantity ELSE 0 END),0) as total_kg,
+    COALESCE(SUM(CASE WHEN LOWER(wt.unit_label)='kg' THEN da.payment ELSE 0 END),0) as plucking_pay,
+    COALESCE(SUM(CASE WHEN LOWER(wt.unit_label)!='kg' THEN da.payment ELSE 0 END),0) as other_pay,
     COALESCE(SUM(da.payment),0) as total_pay,
     SUM(CASE WHEN da.payment_status='paid' THEN da.payment ELSE 0 END) as paid_amount,
     SUM(CASE WHEN da.payment_status='pending' THEN da.payment ELSE 0 END) as pending_amount,
@@ -79,18 +81,21 @@ $workerPayroll = DB::fetchAll("SELECT w.full_name, w.id as worker_id,
     MIN(da.payment_status) as all_same
     FROM workers w
     LEFT JOIN daily_assignments da ON w.id=da.worker_id AND da.estate_id=? AND DATE_FORMAT(da.assignment_date,'%Y-%m')=?
+    LEFT JOIN work_types wt ON da.work_type_id = wt.id
     WHERE w.estate_id=? AND w.is_active=1
     GROUP BY w.id ORDER BY total_pay DESC", [$estateId, $selMonth, $estateId]);
 
-// Daily summary
-$dailySummary = DB::fetchAll("SELECT assignment_date,
-    COUNT(DISTINCT worker_id) as workers,
-    COALESCE(SUM(CASE WHEN work_type_id=1 THEN quantity ELSE 0 END),0) as kg,
-    COALESCE(SUM(payment),0) as payroll,
-    SUM(CASE WHEN payment_status='paid' THEN payment ELSE 0 END) as paid_amount,
-    SUM(CASE WHEN payment_status='pending' THEN payment ELSE 0 END) as pending_amount
-    FROM daily_assignments WHERE estate_id=? AND approval_status='approved' AND DATE_FORMAT(assignment_date,'%Y-%m')=?
-    GROUP BY assignment_date ORDER BY assignment_date DESC", [$estateId, $selMonth]);
+// Daily summary — use unit_label='kg' for plucking detection
+$dailySummary = DB::fetchAll("SELECT da.assignment_date,
+    COUNT(DISTINCT da.worker_id) as workers,
+    COALESCE(SUM(CASE WHEN LOWER(wt.unit_label)='kg' THEN da.quantity ELSE 0 END),0) as kg,
+    COALESCE(SUM(da.payment),0) as payroll,
+    SUM(CASE WHEN da.payment_status='paid' THEN da.payment ELSE 0 END) as paid_amount,
+    SUM(CASE WHEN da.payment_status='pending' THEN da.payment ELSE 0 END) as pending_amount
+    FROM daily_assignments da
+    JOIN work_types wt ON da.work_type_id = wt.id
+    WHERE da.estate_id=? AND da.approval_status='approved' AND DATE_FORMAT(da.assignment_date,'%Y-%m')=?
+    GROUP BY da.assignment_date ORDER BY da.assignment_date DESC", [$estateId, $selMonth]);
 
 // Detailed records for worker detail view
 $workerDetail = null;
@@ -105,15 +110,16 @@ if ($detailWorker) {
     $detailWorkerName = DB::fetchOne("SELECT full_name FROM workers WHERE id=? AND estate_id=?", [$detailWorker,$estateId]);
 }
 
-// Plantation-wise
+// Plantation-wise — use unit_label='kg' for plucking detection
 $plantPayroll = DB::fetchAll("SELECT p.name,
     COALESCE(SUM(da.payment),0) as total_pay,
-    COALESCE(SUM(CASE WHEN da.work_type_id=1 THEN da.quantity ELSE 0 END),0) as total_kg,
+    COALESCE(SUM(CASE WHEN LOWER(wt.unit_label)='kg' THEN da.quantity ELSE 0 END),0) as total_kg,
     COUNT(DISTINCT da.worker_id) as workers,
     SUM(CASE WHEN da.payment_status='paid' THEN da.payment ELSE 0 END) as paid_amount,
     SUM(CASE WHEN da.payment_status='pending' THEN da.payment ELSE 0 END) as pending_amount
     FROM plantations p
     LEFT JOIN daily_assignments da ON p.id=da.plantation_id AND da.estate_id=? AND DATE_FORMAT(da.assignment_date,'%Y-%m')=?
+    LEFT JOIN work_types wt ON da.work_type_id = wt.id
     WHERE p.estate_id=? AND p.is_active=1 GROUP BY p.id ORDER BY total_pay DESC", [$estateId, $selMonth, $estateId]);
 $maxPlant = max(array_column($plantPayroll,'total_pay') ?: [1]);
 

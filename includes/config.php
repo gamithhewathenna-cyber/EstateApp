@@ -19,6 +19,6 @@ define('SESSION_TIMEOUT', 3600); // 1 hour
 // Timezone
 date_default_timezone_set('Asia/Colombo');
 
-// Error reporting (set to 0 on production)
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+// Error reporting — off in production to prevent info leakage
+error_reporting(0);
+ini_set('display_errors', 0);
