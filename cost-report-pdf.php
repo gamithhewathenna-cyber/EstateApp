@@ -93,17 +93,29 @@ $allRecords = DB::fetchAll("SELECT
     ORDER BY da.assignment_date ASC, wt.name ASC, worker_name ASC",
     array_merge([$estateId], $secParams, [$selMonth]));
 
-// Expenses for this section this month
-// Include: expenses assigned to this section OR expenses with no section (general/food)
-$expenseRecords = DB::fetchAll("SELECT
-    expense_date, expense_type, amount, notes,
-    WEEK(expense_date, 1) as week_num,
-    CASE WHEN plantation_id IS NULL OR plantation_id=0 THEN 'General' ELSE 'Section' END as scope
-    FROM expenses
-    WHERE estate_id=?
-    AND (plantation_id=? OR plantation_id IS NULL OR plantation_id=0)
-    AND DATE_FORMAT(expense_date,'%Y-%m')=?
-    ORDER BY expense_date ASC, expense_type ASC", [$estateId, $selSection, $selMonth]);
+// Expenses for this section/month.
+// "All Sections" fetches every expense for the estate.
+// A specific section fetches that section's expenses plus general (null/0) expenses.
+if ($selSection === 'all') {
+    $expenseRecords = DB::fetchAll("SELECT
+        expense_date, expense_type, amount, notes,
+        WEEK(expense_date, 1) as week_num,
+        CASE WHEN plantation_id IS NULL OR plantation_id=0 THEN 'General' ELSE 'Section' END as scope
+        FROM expenses
+        WHERE estate_id=?
+        AND DATE_FORMAT(expense_date,'%Y-%m')=?
+        ORDER BY expense_date ASC, expense_type ASC", [$estateId, $selMonth]);
+} else {
+    $expenseRecords = DB::fetchAll("SELECT
+        expense_date, expense_type, amount, notes,
+        WEEK(expense_date, 1) as week_num,
+        CASE WHEN plantation_id IS NULL OR plantation_id=0 THEN 'General' ELSE 'Section' END as scope
+        FROM expenses
+        WHERE estate_id=?
+        AND (plantation_id=? OR plantation_id IS NULL OR plantation_id=0)
+        AND DATE_FORMAT(expense_date,'%Y-%m')=?
+        ORDER BY expense_date ASC, expense_type ASC", [$estateId, $selSection, $selMonth]);
+}
 
 $totalExpensesAmt = array_sum(array_column($expenseRecords, 'amount'));
 
