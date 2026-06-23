@@ -187,11 +187,6 @@ require_once __DIR__ . '/includes/header.php';
 
 <!-- ── STAT CARDS ─────────────────────────────────── -->
 <div class="stats-grid" style="margin-bottom:20px">
-  <div class="stat-card">
-    <div class="stat-label"><i class="ti ti-users"></i> Workers</div>
-    <div class="stat-value"><?= $workersRange['cnt'] ?></div>
-    <div class="stat-sub">active in period · <?= $totalWorkers ?> total</div>
-  </div>
   <div class="stat-card teal">
     <div class="stat-label"><i class="ti ti-weight"></i> KG Plucked</div>
     <div class="stat-value"><?= number_format((float)$kgRange['total'],0) ?> kg</div>
@@ -211,11 +206,6 @@ require_once __DIR__ . '/includes/header.php';
 
 <!-- ── FIXED-PERIOD STAT CARDS ────────────────────────── -->
 <div class="stats-grid" style="margin-bottom:20px">
-  <div class="stat-card" style="border-left:3px solid var(--green-400)">
-    <div class="stat-label"><i class="ti ti-calendar-stats"></i> Total Yearly KG</div>
-    <div class="stat-value"><?= number_format((float)$yearlyKg['total'],0) ?> <span style="font-size:14px;font-weight:500">kg</span></div>
-    <div class="stat-sub"><?= date('Y') ?> · all plucking</div>
-  </div>
   <div class="stat-card teal" style="border-left:3px solid var(--teal-400)">
     <div class="stat-label"><i class="ti ti-leaf"></i> Plucked KG (This Month)</div>
     <div class="stat-value"><?= number_format((float)$currentMonthKg['total'],0) ?> <span style="font-size:14px;font-weight:500">kg</span></div>
@@ -233,73 +223,32 @@ require_once __DIR__ . '/includes/header.php';
   </div>
 </div>
 
-<!-- ── ROW 2: EXPENSES BREAKDOWN + FERTILIZER ── -->
-<div class="grid-2" style="margin-bottom:20px">
-
-  <!-- Expenses Breakdown -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title"><i class="ti ti-receipt"></i> Expenses Breakdown</div>
-      <a href="expenses.php?from=<?= $dateFrom ?>&to=<?= $dateTo ?>" class="card-action">View all</a>
-    </div>
-    <?php if ($expByCategory): ?>
-      <!-- Big total -->
-      <div style="text-align:center;padding:10px 0 14px;border-bottom:1px solid #f0f0eb;margin-bottom:12px">
-        <div style="font-size:22px;font-weight:700;color:var(--amber-600)"><?= money($expRange['total']) ?></div>
-        <div style="font-size:11px;color:var(--gray-400)">Total Expenses</div>
-      </div>
-      <?php foreach ($expByCategory as $ec):
-        $pct  = $maxExpCat>0 ? round($ec['total']/$maxExpCat*100) : 0;
-        $icon = $expIcons[$ec['expense_type']] ?? 'ti-dots-circle-horizontal';
-        $col  = $expText[$ec['expense_type']] ?? 'var(--gray-600)';
-      ?>
-      <div style="margin-bottom:9px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:3px;align-items:center">
-          <span style="font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px">
-            <i class="ti <?= $icon ?>" style="color:<?= $col ?>;font-size:14px"></i>
-            <?= sanitize($ec['expense_type']) ?>
-            <span style="font-weight:400;color:var(--gray-400);font-size:11px">(<?= $ec['cnt'] ?>)</span>
-          </span>
-          <span style="font-size:12px;font-weight:700;color:var(--amber-600)"><?= money($ec['total']) ?></span>
-        </div>
-        <div style="height:6px;background:var(--gray-50);border-radius:4px;overflow:hidden">
-          <div style="width:<?= $pct ?>%;height:100%;background:var(--amber-400);border-radius:4px"></div>
-        </div>
-      </div>
-      <?php endforeach; ?>
-    <?php else: ?>
-      <div class="empty-state"><i class="ti ti-receipt-off"></i><p>No expenses in this period</p></div>
-    <?php endif; ?>
+<!-- ── FERTILIZER ── -->
+<div class="card" style="margin-bottom:20px">
+  <div class="card-header">
+    <div class="card-title"><i class="ti ti-droplet"></i> Fertilizer Due</div>
+    <a href="fertilizer.php" class="card-action">View all</a>
   </div>
-
-  <!-- Fertilizer Reminders (always current) -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title"><i class="ti ti-droplet"></i> Fertilizer Due</div>
-      <a href="fertilizer.php" class="card-action">View all</a>
-    </div>
-    <?php if ($fertDue): ?>
-      <?php foreach ($fertDue as $f):
-        if (empty($f['next_due_date'])) continue;
-        $days = daysUntil($f['next_due_date']);
-        $cls  = $days<=3?'due-urgent':($days<=10?'due-soon':'due-ok');
-        $dotc = $days<=3?'var(--red-400)':($days<=10?'var(--amber-400)':'var(--green-400)');
-        $lbl  = $days<=0?'Overdue':'In '.$days.'d';
-      ?>
-      <div class="fert-item">
-        <div class="fert-dot" style="background:<?= $dotc ?>"></div>
-        <div class="fert-info">
-          <div class="fert-name"><?= sanitize($f['plantation_name']) ?></div>
-          <div class="fert-date"><?= sanitize($f['fertilizer_type']) ?> · <?= fmtDate($f['applied_date']) ?></div>
-        </div>
-        <div class="fert-due <?= $cls ?>"><?= $lbl ?></div>
+  <?php if ($fertDue): ?>
+    <?php foreach ($fertDue as $f):
+      if (empty($f['next_due_date'])) continue;
+      $days = daysUntil($f['next_due_date']);
+      $cls  = $days<=3?'due-urgent':($days<=10?'due-soon':'due-ok');
+      $dotc = $days<=3?'var(--red-400)':($days<=10?'var(--amber-400)':'var(--green-400)');
+      $lbl  = $days<=0?'Overdue':'In '.$days.'d';
+    ?>
+    <div class="fert-item">
+      <div class="fert-dot" style="background:<?= $dotc ?>"></div>
+      <div class="fert-info">
+        <div class="fert-name"><?= sanitize($f['plantation_name']) ?></div>
+        <div class="fert-date"><?= sanitize($f['fertilizer_type']) ?> · <?= fmtDate($f['applied_date']) ?></div>
       </div>
-      <?php endforeach; ?>
-    <?php else: ?>
-      <div class="empty-state"><i class="ti ti-check"></i><p>No upcoming cycles</p></div>
-    <?php endif; ?>
-  </div>
-
+      <div class="fert-due <?= $cls ?>"><?= $lbl ?></div>
+    </div>
+    <?php endforeach; ?>
+  <?php else: ?>
+    <div class="empty-state"><i class="ti ti-check"></i><p>No upcoming cycles</p></div>
+  <?php endif; ?>
 </div>
 
 <!-- ── SECTION COST + KG BY SECTION ────────────────── -->
@@ -428,30 +377,8 @@ require_once __DIR__ . '/includes/header.php';
     <?php endif; ?>
   </div>
 
-  <!-- Right column: Attendance + Recent Expenses -->
-  <div style="display:flex;flex-direction:column;gap:16px">
-
-    <!-- Today's Attendance (always today) -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title"><i class="ti ti-activity"></i> Today's Attendance</div>
-        <span style="font-size:11px;color:var(--gray-400)"><?= fmtDate($today) ?></span>
-      </div>
-      <div style="display:flex;gap:10px">
-        <div style="flex:1;text-align:center;padding:10px 6px;background:var(--green-50);border-radius:var(--radius-md)">
-          <div style="font-size:20px;font-weight:700;color:var(--green-800)"><?= $presentToday ?></div>
-          <div style="font-size:11px;color:var(--green-600)">Present</div>
-        </div>
-        <div style="flex:1;text-align:center;padding:10px 6px;background:var(--amber-50);border-radius:var(--radius-md)">
-          <div style="font-size:20px;font-weight:700;color:var(--amber-600)"><?= $absentToday ?></div>
-          <div style="font-size:11px;color:var(--amber-600)">Absent</div>
-        </div>
-        <div style="flex:1;text-align:center;padding:10px 6px;background:var(--teal-50);border-radius:var(--radius-md)">
-          <div style="font-size:20px;font-weight:700;color:var(--teal-600)"><?= number_format((float)$kgToday['total'],0) ?></div>
-          <div style="font-size:11px;color:var(--teal-600)">kg today</div>
-        </div>
-      </div>
-    </div>
+  <!-- Recent Expenses -->
+  <div>
 
     <!-- Recent Expenses in range -->
     <div class="card">
@@ -488,7 +415,6 @@ require_once __DIR__ . '/includes/header.php';
       <?php endif; ?>
     </div>
 
-  </div>
 </div>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
