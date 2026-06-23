@@ -90,6 +90,43 @@ $dailyKg = DB::fetchAll("SELECT assignment_date, SUM(quantity) as kg
     GROUP BY assignment_date ORDER BY assignment_date", [$estateId,$estateId,$dateFrom,$dateTo]);
 $maxDailyKg = max(array_column($dailyKg,'kg') ?: [1]);
 
+// ── FIXED-PERIOD METRICS (always current year / month / week) ──────────
+$yearlyKg = DB::fetchOne("SELECT COALESCE(SUM(da.quantity),0) as total
+    FROM daily_assignments da
+    JOIN work_types wt ON da.work_type_id=wt.id
+    WHERE da.estate_id=? AND da.approval_status='approved'
+    AND LOWER(wt.unit_label)='kg' AND YEAR(da.assignment_date)=YEAR(CURDATE())", [$estateId]);
+
+$currentMonthKg = DB::fetchOne("SELECT COALESCE(SUM(da.quantity),0) as total
+    FROM daily_assignments da
+    JOIN work_types wt ON da.work_type_id=wt.id
+    WHERE da.estate_id=? AND da.approval_status='approved'
+    AND LOWER(wt.unit_label)='kg' AND DATE_FORMAT(da.assignment_date,'%Y-%m')=?",
+    [$estateId, date('Y-m')]);
+
+$weekStart    = date('Y-m-d', strtotime('monday this week'));
+$weeklyExpAmt = DB::fetchOne("SELECT COALESCE(SUM(amount),0) as total
+    FROM expenses WHERE estate_id=? AND expense_date BETWEEN ? AND ?",
+    [$estateId, $weekStart, $today]);
+
+$currentMonthPayroll = DB::fetchOne("SELECT COALESCE(SUM(payment),0) as total
+    FROM daily_assignments WHERE estate_id=? AND approval_status='approved'
+    AND DATE_FORMAT(assignment_date,'%Y-%m')=?", [$estateId, date('Y-m')]);
+
+// Section cost + KG for the selected date range
+$sectionCosts    = DB::fetchAll("SELECT p.name,
+    COALESCE(SUM(da.payment),0) as cost,
+    COALESCE(SUM(CASE WHEN LOWER(wt.unit_label)='kg' THEN da.quantity ELSE 0 END),0) as kg
+    FROM plantations p
+    LEFT JOIN daily_assignments da ON p.id=da.plantation_id
+        AND da.estate_id=? AND da.approval_status='approved'
+        AND da.assignment_date BETWEEN ? AND ?
+    LEFT JOIN work_types wt ON da.work_type_id=wt.id
+    WHERE p.estate_id=? AND p.is_active=1
+    GROUP BY p.id, p.name ORDER BY cost DESC", [$estateId, $dateFrom, $dateTo, $estateId]);
+$maxSectionCost = max(array_column($sectionCosts,'cost') ?: [1]);
+$maxSectionKg2  = max(array_column($sectionCosts,'kg')   ?: [1]);
+
 // Expense icons
 $expIcons  = ['Spray Can'=>'ti-spray','Pohora'=>'ti-leaf','Dolomite'=>'ti-mountain','Food'=>'ti-salad','Transport'=>'ti-truck','Equipment'=>'ti-tool','Miscellaneous'=>'ti-dots-circle-horizontal'];
 $expColors = ['Spray Can'=>'var(--teal-50)','Pohora'=>'var(--green-50)','Dolomite'=>'#EDE9FE','Food'=>'var(--amber-50)','Transport'=>'var(--teal-50)','Equipment'=>'var(--green-50)','Miscellaneous'=>'var(--gray-50)'];
@@ -172,39 +209,32 @@ require_once __DIR__ . '/includes/header.php';
   </div>
 </div>
 
-<!-- ── ROW 2: PLANTATION KG + EXPENSES BREAKDOWN + FERTILIZER ── -->
-<div class="grid-3" style="margin-bottom:20px">
-
-  <!-- Plantation KG -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title"><i class="ti ti-plant-2"></i> KG by Section</div>
-      <a href="production.php" class="card-action">Details</a>
-    </div>
-    <?php if ($plantKg && max(array_column($plantKg,'kg'))>0): ?>
-      <?php foreach ($plantKg as $p): ?>
-      <div class="bar-row">
-        <div class="bar-label"><?= sanitize($p['name']) ?></div>
-        <div class="bar-track"><div class="bar-fill" style="width:<?= $maxKg>0?round((float)$p['kg']/$maxKg*100):0 ?>%"></div></div>
-        <div class="bar-val"><?= number_format((float)$p['kg'],0) ?> kg</div>
-      </div>
-      <?php endforeach; ?>
-      <!-- Mini trend chart -->
-      <?php if (count($dailyKg) > 1): ?>
-      <div style="margin-top:12px;padding-top:10px;border-top:1px solid #f0f0eb">
-        <div style="font-size:11px;color:var(--gray-400);margin-bottom:6px">Daily KG trend</div>
-        <div class="mini-chart" style="height:40px;gap:2px">
-          <?php foreach ($dailyKg as $d): ?>
-          <div class="mini-bar" style="height:<?= $maxDailyKg>0?round((float)$d['kg']/$maxDailyKg*100):0 ?>%"
-               title="<?= fmtDate($d['assignment_date']) ?>: <?= number_format($d['kg'],1) ?> kg"></div>
-          <?php endforeach; ?>
-        </div>
-      </div>
-      <?php endif; ?>
-    <?php else: ?>
-      <div class="empty-state"><i class="ti ti-leaf-off"></i><p>No KG data for this period</p></div>
-    <?php endif; ?>
+<!-- ── FIXED-PERIOD STAT CARDS ────────────────────────── -->
+<div class="stats-grid" style="margin-bottom:20px">
+  <div class="stat-card" style="border-left:3px solid var(--green-400)">
+    <div class="stat-label"><i class="ti ti-calendar-stats"></i> Total Yearly KG</div>
+    <div class="stat-value"><?= number_format((float)$yearlyKg['total'],0) ?> <span style="font-size:14px;font-weight:500">kg</span></div>
+    <div class="stat-sub"><?= date('Y') ?> · all plucking</div>
   </div>
+  <div class="stat-card teal" style="border-left:3px solid var(--teal-400)">
+    <div class="stat-label"><i class="ti ti-leaf"></i> Plucked KG (This Month)</div>
+    <div class="stat-value"><?= number_format((float)$currentMonthKg['total'],0) ?> <span style="font-size:14px;font-weight:500">kg</span></div>
+    <div class="stat-sub"><?= date('F Y') ?></div>
+  </div>
+  <div class="stat-card amber" style="border-left:3px solid var(--amber-400)">
+    <div class="stat-label"><i class="ti ti-receipt"></i> Weekly Expenses</div>
+    <div class="stat-value"><?= moneyShort($weeklyExpAmt['total']) ?></div>
+    <div class="stat-sub">Mon <?= date('d M', strtotime($weekStart)) ?> – today</div>
+  </div>
+  <div class="stat-card" style="border-left:3px solid var(--green-600)">
+    <div class="stat-label"><i class="ti ti-cash"></i> Assignment Cost</div>
+    <div class="stat-value"><?= moneyShort($currentMonthPayroll['total']) ?></div>
+    <div class="stat-sub"><?= date('F Y') ?> payroll</div>
+  </div>
+</div>
+
+<!-- ── ROW 2: EXPENSES BREAKDOWN + FERTILIZER ── -->
+<div class="grid-2" style="margin-bottom:20px">
 
   <!-- Expenses Breakdown -->
   <div class="card">
@@ -272,6 +302,65 @@ require_once __DIR__ . '/includes/header.php';
 
 </div>
 
+<!-- ── SECTION COST + KG BY SECTION ────────────────── -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+
+  <!-- Section Cost -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="ti ti-building-estate"></i> Section Cost</div>
+      <span style="font-size:11px;color:var(--gray-400)"><?= fmtDate($dateFrom) ?> → <?= fmtDate($dateTo) ?></span>
+    </div>
+    <?php if ($sectionCosts && max(array_column($sectionCosts,'cost')) > 0): ?>
+      <?php foreach ($sectionCosts as $sc): ?>
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+          <span style="font-size:13px;font-weight:600;color:var(--green-900)"><?= sanitize($sc['name']) ?></span>
+          <span style="font-size:13px;font-weight:700;color:var(--green-700)"><?= money($sc['cost']) ?></span>
+        </div>
+        <div style="height:7px;background:var(--gray-50);border-radius:4px;overflow:hidden;margin-bottom:3px">
+          <div style="width:<?= $maxSectionCost>0?round($sc['cost']/$maxSectionCost*100):0 ?>%;height:100%;background:linear-gradient(90deg,var(--green-400),var(--green-600));border-radius:4px"></div>
+        </div>
+        <div style="font-size:11px;color:var(--gray-400)"><?= number_format((float)$sc['kg'],1) ?> kg plucked</div>
+      </div>
+      <?php endforeach; ?>
+    <?php else: ?>
+      <div class="empty-state"><i class="ti ti-building-off"></i><p>No section data for this period</p></div>
+    <?php endif; ?>
+  </div>
+
+  <!-- KG by Section (with mini trend) -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="ti ti-weight"></i> KG by Section</div>
+      <span style="font-size:11px;color:var(--gray-400)"><?= fmtDate($dateFrom) ?> → <?= fmtDate($dateTo) ?></span>
+    </div>
+    <?php if ($sectionCosts && max(array_column($sectionCosts,'kg')) > 0): ?>
+      <?php foreach ($sectionCosts as $sc): ?>
+      <div class="bar-row">
+        <div class="bar-label"><?= sanitize($sc['name']) ?></div>
+        <div class="bar-track"><div class="bar-fill" style="width:<?= $maxSectionKg2>0?round((float)$sc['kg']/$maxSectionKg2*100):0 ?>%"></div></div>
+        <div class="bar-val"><?= number_format((float)$sc['kg'],0) ?> kg</div>
+      </div>
+      <?php endforeach; ?>
+      <?php if (count($dailyKg) > 1): ?>
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid #f0f0eb">
+        <div style="font-size:11px;color:var(--gray-400);margin-bottom:6px">Daily KG trend</div>
+        <div class="mini-chart" style="height:40px;gap:2px">
+          <?php foreach ($dailyKg as $d): ?>
+          <div class="mini-bar" style="height:<?= $maxDailyKg>0?round((float)$d['kg']/$maxDailyKg*100):0 ?>%"
+               title="<?= fmtDate($d['assignment_date']) ?>: <?= number_format($d['kg'],1) ?> kg"></div>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      <?php endif; ?>
+    <?php else: ?>
+      <div class="empty-state"><i class="ti ti-leaf-off"></i><p>No KG data for this period</p></div>
+    <?php endif; ?>
+  </div>
+
+</div>
+
 <!-- ── PERIOD SUMMARY BAR ─────────────────────────── -->
 <?php if ($payRange['total'] > 0 || $expRange['total'] > 0): ?>
 <div class="card" style="margin-bottom:20px;border-left:4px solid var(--green-400)">
@@ -306,10 +395,10 @@ require_once __DIR__ . '/includes/header.php';
 <!-- ── ROW 3: TOP WORKERS + TODAY ATTENDANCE + RECENT EXPENSES ── -->
 <div class="grid-2" style="margin-bottom:20px">
 
-  <!-- Top Workers -->
+  <!-- Top Workers by KG -->
   <div class="card">
     <div class="card-header">
-      <div class="card-title"><i class="ti ti-trophy"></i> Top Workers</div>
+      <div class="card-title"><i class="ti ti-trophy"></i> Top Workers by KG</div>
       <a href="production.php?from=<?= $dateFrom ?>&to=<?= $dateTo ?>" class="card-action">See all</a>
     </div>
     <?php if ($topWorkers): ?>
