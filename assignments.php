@@ -1731,6 +1731,8 @@ if (frm) frm.addEventListener('submit', function(e) {
 
 // ── MOBILE FORM TOGGLE ──────────────────────────────────
 var _mobileFormOpen = false;
+var _lastInnerWidth = -1; // sentinel so first call always runs
+
 function toggleMobileForm() {
   var col   = document.getElementById('assign-form-col');
   var icon  = document.getElementById('mobile-form-icon');
@@ -1738,18 +1740,31 @@ function toggleMobileForm() {
   if (!col) return;
   _mobileFormOpen = !_mobileFormOpen;
   col.style.display = _mobileFormOpen ? 'block' : 'none';
-  if (icon)  { icon.className  = _mobileFormOpen ? 'ti ti-x' : 'ti ti-clipboard-plus'; }
-  if (label) { label.textContent = _mobileFormOpen ? 'Close Form' : 'New Assignment'; }
+  if (icon)  icon.className    = _mobileFormOpen ? 'ti ti-x' : 'ti ti-clipboard-plus';
+  if (label) label.textContent = _mobileFormOpen ? 'Close Form' : 'New Assignment';
 }
-// On desktop (>1000px) always show form; on mobile hide initially
+
 function initMobileFormState() {
   var col = document.getElementById('assign-form-col');
   if (!col) return;
-  if (window.innerWidth <= 1000) {
-    col.style.display = 'none'; // hidden by default on mobile
+  var w = window.innerWidth;
+  // Virtual keyboard on mobile only changes innerHeight, not innerWidth.
+  // Bail out when width is unchanged so the keyboard doesn't close the form.
+  if (w === _lastInnerWidth) return;
+  _lastInnerWidth = w;
+
+  if (w > 1000) {
+    // Desktop: form always visible, clear any inline hide
+    col.style.display = '';
     _mobileFormOpen = false;
   } else {
-    col.style.display = ''; // always visible on desktop
+    // Mobile/tablet: reset to closed state on genuine width change (e.g. rotation)
+    col.style.display = 'none';
+    _mobileFormOpen = false;
+    var icon  = document.getElementById('mobile-form-icon');
+    var label = document.getElementById('mobile-form-label');
+    if (icon)  icon.className    = 'ti ti-clipboard-plus';
+    if (label) label.textContent = 'New Assignment';
   }
 }
 initMobileFormState();
