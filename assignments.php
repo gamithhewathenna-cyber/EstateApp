@@ -372,8 +372,8 @@ require_once __DIR__ . '/includes/header.php';
 .badge-rejected { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:700; display:inline-flex; align-items:center; gap:3px; }
 .badge-approved { background:#d1fae5; color:#065f46; border:1px solid #6ee7b7; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:700; display:inline-flex; align-items:center; gap:3px; }
 
-/* Mobile "New Assignment" toggle button — hidden on desktop */
-.mobile-form-toggle { display: none; }
+/* Mobile "New Assignment" toggle button — removed */
+.mobile-form-toggle { display: none !important; }
 
 /* Tab nav — always horizontal-scroll, never wraps */
 .assign-tabs {
@@ -407,14 +407,9 @@ require_once __DIR__ . '/includes/header.php';
 /* ── TABLET LANDSCAPE (≤1000px) ── */
 @media (max-width: 1000px) {
   .assign-main-grid { grid-template-columns: 1fr !important; }
-  /* List first, form below */
-  .assign-form-col { order: 2; }
-  .assign-list-col { order: 1; }
-  /* Show the mobile toggle */
-  .mobile-form-toggle {
-    display: flex; align-items: center; justify-content: center;
-    margin-bottom: 14px;
-  }
+  /* Form on top, list below */
+  .assign-form-col { order: 1; }
+  .assign-list-col { order: 2; }
   /* Shrink worker list height on tablet to save space */
   #worker-list { max-height: 160px !important; }
 }
@@ -734,14 +729,6 @@ require_once __DIR__ . '/includes/header.php';
 
 <!-- RIGHT: ASSIGNMENT LIST -->
 <div class="assign-list-col">
-  <!-- Mobile-only toggle to show/hide the New Assignment form -->
-  <div class="mobile-form-toggle">
-    <button type="button" class="btn btn-primary" style="width:100%;justify-content:center"
-            onclick="toggleMobileForm()">
-      <i class="ti ti-clipboard-plus" id="mobile-form-icon"></i>
-      <span id="mobile-form-label">New Assignment</span>
-    </button>
-  </div>
   <div class="card">
     <!-- TABS -->
     <div class="assign-tabs">
@@ -1728,47 +1715,6 @@ if (frm) frm.addEventListener('submit', function(e) {
     if (!anyKg) { e.preventDefault(); alert('Please enter KG for at least one selected worker.'); return; }
   }
 });
-
-// ── MOBILE FORM TOGGLE ──────────────────────────────────
-var _mobileFormOpen = false;
-var _lastInnerWidth = -1; // sentinel so first call always runs
-
-function toggleMobileForm() {
-  var col   = document.getElementById('assign-form-col');
-  var icon  = document.getElementById('mobile-form-icon');
-  var label = document.getElementById('mobile-form-label');
-  if (!col) return;
-  _mobileFormOpen = !_mobileFormOpen;
-  col.style.display = _mobileFormOpen ? 'block' : 'none';
-  if (icon)  icon.className    = _mobileFormOpen ? 'ti ti-x' : 'ti ti-clipboard-plus';
-  if (label) label.textContent = _mobileFormOpen ? 'Close Form' : 'New Assignment';
-}
-
-function initMobileFormState() {
-  var col = document.getElementById('assign-form-col');
-  if (!col) return;
-  var w = window.innerWidth;
-  // Virtual keyboard on mobile only changes innerHeight, not innerWidth.
-  // Bail out when width is unchanged so the keyboard doesn't close the form.
-  if (w === _lastInnerWidth) return;
-  _lastInnerWidth = w;
-
-  if (w > 1000) {
-    // Desktop: form always visible, clear any inline hide
-    col.style.display = '';
-    _mobileFormOpen = false;
-  } else {
-    // Mobile/tablet: reset to closed state on genuine width change (e.g. rotation)
-    col.style.display = 'none';
-    _mobileFormOpen = false;
-    var icon  = document.getElementById('mobile-form-icon');
-    var label = document.getElementById('mobile-form-label');
-    if (icon)  icon.className    = 'ti ti-clipboard-plus';
-    if (label) label.textContent = 'New Assignment';
-  }
-}
-initMobileFormState();
-window.addEventListener('resize', initMobileFormState);
 
 // toggleDay — accordion for date-range groups
 function toggleDay(id) {
