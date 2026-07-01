@@ -182,6 +182,8 @@ foreach ($byWeek as $wdata) {
 $grandTotal       = array_sum(array_column($filteredRecords, 'payment'));
 $grandKg          = array_sum(array_map(fn($r) => $r['unit_lower'] === 'kg' ? $r['quantity'] : 0, $filteredRecords));
 $totalExpensesAmt = array_sum(array_column(array_values($filteredExpenses), 'amount'));
+$grandPaid        = array_sum(array_map(fn($r) => $r['payment_status'] === 'paid' ? $r['payment'] : 0, $filteredRecords));
+$grandOutstanding = $grandTotal - $grandPaid;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -358,6 +360,11 @@ body {
 .work-note  { font-size: 10px; color: #b08040; margin-top: 1px; font-style: italic; }
 .work-cost  { font-size: 13px; font-weight: 800; color: #2E6B12; flex-shrink: 0; white-space: nowrap; }
 .temp-badge { font-size: 8px; font-weight: 700; background: #FFF3CD; color: #856404; border: 1px solid #FFC107; padding: 1px 5px; border-radius: 8px; margin-left: 4px; vertical-align: middle; }
+.paid-badge        { font-size: 8px; font-weight: 700; background: #D1FAE5; color: #065F46; border: 1px solid #6EE7B7; padding: 1px 6px; border-radius: 8px; display: inline-block; white-space: nowrap; }
+.outstanding-badge { font-size: 8px; font-weight: 700; background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; padding: 1px 6px; border-radius: 8px; display: inline-block; white-space: nowrap; }
+.work-cost-col { text-align: right; flex-shrink: 0; min-width: 90px; }
+.work-cost-col .work-cost { margin-bottom: 3px; }
+.work-cost-col .status-tags { display: flex; gap: 4px; justify-content: flex-end; flex-wrap: wrap; }
 
 /* ── WEEK SUBTOTAL ── */
 .week-subtotal {
@@ -465,20 +472,24 @@ body {
   ?>
   <div class="summary-bar">
     <div class="sum-item">
-      <div class="sum-label">Total Cost</div>
-      <div class="sum-value"><?= money($grandTotal + $totalExpensesAmt) ?></div>
+      <div class="sum-label">Total Labor Cost</div>
+      <div class="sum-value"><?= money($grandTotal) ?></div>
     </div>
-    <div class="sum-item">
-      <div class="sum-label">Tea Plucking</div>
-      <div class="sum-value"><?= money($totalPlucking) ?></div>
-    </div>
+    <?php if ($grandKg > 0): ?>
     <div class="sum-item">
       <div class="sum-label">Total KG</div>
       <div class="sum-value"><?= number_format($grandKg, 1) ?> kg</div>
     </div>
+    <?php endif; ?>
+    <?php if ($grandPaid > 0): ?>
     <div class="sum-item">
-      <div class="sum-label">Other Work</div>
-      <div class="sum-value"><?= money($totalOther) ?></div>
+      <div class="sum-label">Paid</div>
+      <div class="sum-value" style="color:#065F46"><?= money($grandPaid) ?></div>
+    </div>
+    <?php endif; ?>
+    <div class="sum-item" style="background:#FFF1F2">
+      <div class="sum-label" style="color:#991B1B">Outstanding Balance</div>
+      <div class="sum-value" style="color:#991B1B"><?= money($grandOutstanding + $totalExpensesAmt) ?></div>
     </div>
     <?php if ($totalExpensesAmt > 0): ?>
     <div class="sum-item">
@@ -505,6 +516,8 @@ body {
     $wkKg       = array_sum(array_map(fn($r)=>strtolower($r['unit_label'])==='kg'?$r['quantity']:0, $wkAllRows));
     $wkPluck    = array_sum(array_map(fn($r)=>strtolower($r['unit_label'])==='kg'?$r['payment']:0, $wkAllRows));
     $wkOther    = $weekTotalV - $wkPluck;
+    $wkPaid     = array_sum(array_map(fn($r)=>$r['payment_status']==='paid'?$r['payment']:0, $wkAllRows));
+    $wkOutstanding = $weekTotalV - $wkPaid;
     // Calculate week expenses early so the header can include them
     $wkExpDates = $expByWeek[$wk] ?? [];
     $wkExpTotal = 0;
@@ -531,9 +544,23 @@ body {
     <!-- Dates within week -->
     <div class="date-section">
       <?php foreach ($dates as $date => $dayData): ?>
+      <?php
+        $dayPaid = array_sum(array_map(fn($r) => $r['payment_status']==='paid'?$r['payment']:0, $dayData['rows']));
+        $dayPending = $dayData['total'] - $dayPaid;
+      ?>
       <div class="date-header">
         <div class="date-label">📅 <?= date('l, d F Y', strtotime($date)) ?></div>
-        <div class="date-total"><?= money($dayData['total']) ?></div>
+        <div class="date-total" style="display:flex;align-items:center;gap:6px">
+          <?= money($dayData['total']) ?>
+          <?php if ($dayPaid > 0 && $dayPending == 0): ?>
+            <span class="paid-badge">✓ All Paid</span>
+          <?php elseif ($dayPaid > 0): ?>
+            <span class="paid-badge">✓ <?= money($dayPaid) ?></span>
+            <span class="outstanding-badge">Due <?= money($dayPending) ?></span>
+          <?php elseif ($dayPending > 0): ?>
+            <span class="outstanding-badge">Due <?= money($dayPending) ?></span>
+          <?php endif; ?>
+        </div>
       </div>
 
       <?php
@@ -546,10 +573,14 @@ body {
 
       <?php foreach ($byWT as $wtName => $wtRows): ?>
       <?php
-        $wtTotal = array_sum(array_column($wtRows, 'payment'));
-        $wtQty   = array_sum(array_column($wtRows, 'quantity'));
-        $unit    = $wtRows[0]['unit_label'];
-        $isKg    = strtolower($unit) === 'kg';
+        $wtTotal   = array_sum(array_column($wtRows, 'payment'));
+        $wtPaid    = array_sum(array_map(fn($r) => $r['payment_status']==='paid'?$r['payment']:0, $wtRows));
+        $wtPending = $wtTotal - $wtPaid;
+        $wtQty     = array_sum(array_column($wtRows, 'quantity'));
+        $unit      = $wtRows[0]['unit_label'];
+        $isKg      = strtolower($unit) === 'kg';
+        $allPaid   = ($wtPending == 0 && $wtPaid > 0);
+        $nonePaid  = ($wtPaid == 0);
       ?>
       <div class="work-row">
         <div class="work-bullet" style="background:<?= $isKg?'#2E6B12':'#F59E0B' ?>"></div>
@@ -557,11 +588,16 @@ body {
           <div class="work-type"><?= siLabel($wtName, $sinhala, $useSi) ?></div>
           <div class="work-qty"><?= number_format($wtQty, $isKg?1:0) ?> <?= siLabel($unit, $sinhala, $useSi) ?> &nbsp;·&nbsp; <?= count($wtRows) ?> worker(s)</div>
           <?php
-          // List workers
-          $workerNames = array_map(fn($r) => sanitize($r['worker_name']) . ($r['is_temp'] ? ' [TEMP]' : ''), $wtRows);
-          $uniqueNames = array_unique($workerNames);
+          // List workers with individual paid status
+          $workerParts = [];
+          foreach ($wtRows as $r) {
+            $name = sanitize($r['worker_name']) . ($r['is_temp'] ? ' [TEMP]' : '');
+            $isPaidRow = $r['payment_status'] === 'paid';
+            $workerParts[] = $name . ($isPaidRow ? ' ✓' : '');
+          }
+          $uniqueParts = array_unique($workerParts);
           ?>
-          <div class="work-worker"><?= implode(', ', $uniqueNames) ?></div>
+          <div class="work-worker"><?= implode(', ', $uniqueParts) ?></div>
           <?php
           // Show notes
           foreach ($wtRows as $r) {
@@ -574,7 +610,19 @@ body {
           }
           ?>
         </div>
-        <div class="work-cost"><?= money($wtTotal) ?></div>
+        <div class="work-cost-col">
+          <div class="work-cost"><?= money($wtTotal) ?></div>
+          <div class="status-tags">
+            <?php if ($allPaid): ?>
+              <span class="paid-badge">✓ Paid</span>
+            <?php elseif (!$nonePaid): ?>
+              <span class="paid-badge">✓ <?= money($wtPaid) ?></span>
+              <span class="outstanding-badge">Due <?= money($wtPending) ?></span>
+            <?php else: ?>
+              <span class="outstanding-badge">Outstanding</span>
+            <?php endif; ?>
+          </div>
+        </div>
       </div>
       <?php endforeach; ?>
       <?php endforeach; ?>
@@ -609,15 +657,15 @@ body {
           <div class="week-sub-item-label">Total KG</div>
           <div class="week-sub-item-val"><?= number_format($wkKg, 1) ?> kg</div>
         </div>
-        <div class="week-sub-item">
-          <div class="week-sub-item-label">Plucking Cost</div>
-          <div class="week-sub-item-val"><?= money($wkPluck) ?></div>
-        </div>
         <?php endif; ?>
-        <?php if ($wkOther > 0): ?>
         <div class="week-sub-item">
-          <div class="week-sub-item-label">Other Work</div>
-          <div class="week-sub-item-val"><?= money($wkOther) ?></div>
+          <div class="week-sub-item-label">Labor Cost</div>
+          <div class="week-sub-item-val"><?= money($weekTotalV) ?></div>
+        </div>
+        <?php if ($wkPaid > 0): ?>
+        <div class="week-sub-item">
+          <div class="week-sub-item-label">Paid</div>
+          <div class="week-sub-item-val" style="color:#2E6B12"><?= money($wkPaid) ?></div>
         </div>
         <?php endif; ?>
         <?php if ($wkExpTotal > 0): ?>
@@ -626,9 +674,9 @@ body {
           <div class="week-sub-item-val" style="color:#B45309"><?= money($wkExpTotal) ?></div>
         </div>
         <?php endif; ?>
-        <div class="week-sub-item">
-          <div class="week-sub-item-label">Total Cost</div>
-          <div class="week-sub-item-val" style="color:#2E6B12;font-size:15px"><?= money($weekTotalV + $wkExpTotal) ?></div>
+        <div class="week-sub-item" style="border-left:2px solid #dce8d4;padding-left:12px">
+          <div class="week-sub-item-label" style="color:#991B1B">Outstanding</div>
+          <div class="week-sub-item-val" style="color:#991B1B;font-size:15px"><?= money($wkOutstanding + $wkExpTotal) ?></div>
         </div>
       </div>
     </div>
@@ -644,24 +692,26 @@ body {
         <div class="grand-item-label">Total KG</div>
         <div class="grand-item-val"><?= number_format($grandKg,1) ?> kg</div>
       </div>
-      <div class="grand-item">
-        <div class="grand-item-label">Plucking</div>
-        <div class="grand-item-val"><?= money($totalPlucking) ?></div>
-      </div>
       <?php endif; ?>
       <div class="grand-item">
-        <div class="grand-item-label">Other Work</div>
-        <div class="grand-item-val"><?= money($totalOther) ?></div>
+        <div class="grand-item-label">Total Labor</div>
+        <div class="grand-item-val"><?= money($grandTotal) ?></div>
       </div>
+      <?php if ($grandPaid > 0): ?>
+      <div class="grand-item">
+        <div class="grand-item-label">Paid</div>
+        <div class="grand-item-val" style="color:#A5D6A7"><?= money($grandPaid) ?></div>
+      </div>
+      <?php endif; ?>
       <?php if ($totalExpensesAmt > 0): ?>
       <div class="grand-item">
         <div class="grand-item-label">Expenses</div>
         <div class="grand-item-val" style="color:#FCD34D"><?= money($totalExpensesAmt) ?></div>
       </div>
       <?php endif; ?>
-      <div class="grand-item">
-        <div class="grand-item-label">Total Cost</div>
-        <div class="grand-item-val" style="font-size:18px"><?= money($grandTotal + $totalExpensesAmt) ?></div>
+      <div class="grand-item" style="border-left:1px solid rgba(255,255,255,.2);padding-left:16px">
+        <div class="grand-item-label" style="color:#FCA5A5">Outstanding Balance</div>
+        <div class="grand-item-val" style="font-size:18px;color:#FCA5A5"><?= money($grandOutstanding + $totalExpensesAmt) ?></div>
       </div>
     </div>
   </div>
