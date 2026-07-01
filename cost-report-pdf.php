@@ -563,10 +563,7 @@ body {
           <?php if ($dayPaid > 0 && $dayPending == 0): ?>
             <span class="paid-badge">✓ All Paid</span>
           <?php elseif ($dayPaid > 0): ?>
-            <span class="paid-badge">✓ <?= money($dayPaid) ?></span>
-            <span class="outstanding-badge">Due <?= money($dayPending) ?></span>
-          <?php elseif ($dayPending > 0): ?>
-            <span class="outstanding-badge">Due <?= money($dayPending) ?></span>
+            <span class="paid-badge">✓ <?= money($dayPaid) ?> paid</span>
           <?php endif; ?>
         </div>
       </div>
@@ -624,10 +621,7 @@ body {
             <?php if ($allPaid): ?>
               <span class="paid-badge">✓ Paid</span>
             <?php elseif (!$nonePaid): ?>
-              <span class="paid-badge">✓ <?= money($wtPaid) ?></span>
-              <span class="outstanding-badge">Due <?= money($wtPending) ?></span>
-            <?php else: ?>
-              <span class="outstanding-badge">Outstanding</span>
+              <span class="paid-badge">✓ <?= money($wtPaid) ?> paid</span>
             <?php endif; ?>
           </div>
         </div>
