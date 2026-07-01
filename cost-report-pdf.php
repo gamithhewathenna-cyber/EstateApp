@@ -83,6 +83,7 @@ $allRecords = DB::fetchAll("SELECT
     CASE WHEN (da.worker_id IS NULL OR da.worker_id = 0) THEN 1 ELSE 0 END as is_temp,
     da.quantity,
     da.payment,
+    da.payment_status,
     da.notes,
     LOWER(wt.unit_label) as unit_lower
     FROM daily_assignments da
