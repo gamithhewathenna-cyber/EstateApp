@@ -68,7 +68,15 @@ if ($selSection === 'all') {
 
 $monthLabel = date('F Y', strtotime($selMonth.'-01'));
 
-// Get all daily records for the month, grouped by date
+// Compute ISO-week-aligned date range so that weeks spanning a month boundary
+// (e.g. Mon 29 Jun – Sun 05 Jul when July starts on Wednesday) are fully included.
+$monthFirstTs = strtotime($selMonth . '-01');
+$monthLastTs  = strtotime(date('Y-m-t', $monthFirstTs));  // last calendar day of month
+$dowFirst     = (int)date('N', $monthFirstTs);             // Mon=1 … Sun=7
+$dowLast      = (int)date('N', $monthLastTs);
+$rangeStart   = date('Y-m-d', $monthFirstTs - ($dowFirst - 1) * 86400); // Monday of first week
+$rangeEnd     = date('Y-m-d', $monthLastTs  + (7 - $dowLast) * 86400);  // Sunday of last week
+
 $secClause  = ($selSection === 'all') ? '' : 'AND da.plantation_id=?';
 $secParams  = ($selSection === 'all') ? [] : [$selSection];
 
@@ -90,13 +98,11 @@ $allRecords = DB::fetchAll("SELECT
     LEFT JOIN workers w ON da.worker_id = w.id
     JOIN work_types wt ON da.work_type_id = wt.id
     WHERE da.estate_id=? $secClause AND da.approval_status='approved'
-    AND DATE_FORMAT(da.assignment_date,'%Y-%m')=?
+    AND da.assignment_date BETWEEN ? AND ?
     ORDER BY da.assignment_date ASC, wt.name ASC, worker_name ASC",
-    array_merge([$estateId], $secParams, [$selMonth]));
+    array_merge([$estateId], $secParams, [$rangeStart, $rangeEnd]));
 
-// Expenses for this section/month.
-// "All Sections" fetches every expense for the estate.
-// A specific section fetches that section's expenses plus general (null/0) expenses.
+// Expenses — same ISO-week-aligned range.
 if ($selSection === 'all') {
     $expenseRecords = DB::fetchAll("SELECT
         expense_date, expense_type, amount, notes,
@@ -104,8 +110,8 @@ if ($selSection === 'all') {
         CASE WHEN plantation_id IS NULL OR plantation_id=0 THEN 'General' ELSE 'Section' END as scope
         FROM expenses
         WHERE estate_id=?
-        AND DATE_FORMAT(expense_date,'%Y-%m')=?
-        ORDER BY expense_date ASC, expense_type ASC", [$estateId, $selMonth]);
+        AND expense_date BETWEEN ? AND ?
+        ORDER BY expense_date ASC, expense_type ASC", [$estateId, $rangeStart, $rangeEnd]);
 } else {
     $expenseRecords = DB::fetchAll("SELECT
         expense_date, expense_type, amount, notes,
@@ -114,8 +120,8 @@ if ($selSection === 'all') {
         FROM expenses
         WHERE estate_id=?
         AND (plantation_id=? OR plantation_id IS NULL OR plantation_id=0)
-        AND DATE_FORMAT(expense_date,'%Y-%m')=?
-        ORDER BY expense_date ASC, expense_type ASC", [$estateId, $selSection, $selMonth]);
+        AND expense_date BETWEEN ? AND ?
+        ORDER BY expense_date ASC, expense_type ASC", [$estateId, $selSection, $rangeStart, $rangeEnd]);
 }
 
 $totalExpensesAmt = array_sum(array_column($expenseRecords, 'amount'));
@@ -436,7 +442,9 @@ body {
        style="color:<?= !$selWeek?'#A5D6A7':'rgba(255,255,255,.5)' ?>;font-size:11px;padding:4px 10px;border-radius:12px;text-decoration:none;border:1px solid rgba(255,255,255,<?= !$selWeek?.4:.2 ?>)">All Weeks</a>
     <?php foreach ($allByWeekForToolbar as $wk => $wdata): ?>
     <a href="cost-report-pdf.php?section=<?= $selSection ?>&month=<?= $selMonth ?>&week=<?= $wk ?>"
-       style="color:<?= $selWeek==$wk?'#A5D6A7':'rgba(255,255,255,.5)' ?>;font-size:11px;padding:4px 10px;border-radius:12px;text-decoration:none;border:1px solid rgba(255,255,255,<?= $selWeek==$wk?.4:.2 ?>)"><?= $weekLabels[$wk] ?></a>
+       style="color:<?= $selWeek==$wk?'#A5D6A7':'rgba(255,255,255,.5)' ?>;font-size:11px;padding:4px 10px;border-radius:12px;text-decoration:none;border:1px solid rgba(255,255,255,<?= $selWeek==$wk?.4:.2 ?>)">
+      <?= $weekLabels[$wk] ?> (Mon <?= date('d M', strtotime($wdata['week_monday'])) ?> – Sun <?= date('d M', strtotime($wdata['week_sunday'])) ?>)
+    </a>
     <?php endforeach; ?>
   </div>
 </div>
