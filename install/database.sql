@@ -134,6 +134,7 @@ CREATE TABLE `expenses` (
   `plantation_id` int(11) DEFAULT NULL,
   `expense_type` enum('food','transport','equipment','miscellaneous') NOT NULL DEFAULT 'miscellaneous',
   `amount` decimal(10,2) NOT NULL,
+  `food_provided_by` enum('us','owner') NOT NULL DEFAULT 'us',
   `notes` text DEFAULT NULL,
   `created_by` int(11) DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
