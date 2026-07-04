@@ -103,6 +103,8 @@ $allRecords = DB::fetchAll("SELECT
     array_merge([$estateId], $secParams, [$rangeStart, $rangeEnd]));
 
 // Expenses — same ISO-week-aligned range.
+// Only Food expenses count toward this cost report, and only when we paid for it
+// (owner/client-provided food is logged for record-keeping but excluded here).
 if ($selSection === 'all') {
     $expenseRecords = DB::fetchAll("SELECT
         expense_date, expense_type, amount, notes,
@@ -111,6 +113,7 @@ if ($selSection === 'all') {
         FROM expenses
         WHERE estate_id=?
         AND expense_date BETWEEN ? AND ?
+        AND expense_type='Food' AND food_provided_by='us'
         ORDER BY expense_date ASC, expense_type ASC", [$estateId, $rangeStart, $rangeEnd]);
 } else {
     $expenseRecords = DB::fetchAll("SELECT
@@ -121,6 +124,7 @@ if ($selSection === 'all') {
         WHERE estate_id=?
         AND (plantation_id=? OR plantation_id IS NULL OR plantation_id=0)
         AND expense_date BETWEEN ? AND ?
+        AND expense_type='Food' AND food_provided_by='us'
         ORDER BY expense_date ASC, expense_type ASC", [$estateId, $selSection, $rangeStart, $rangeEnd]);
 }
 
@@ -501,7 +505,7 @@ body {
     </div>
     <?php if ($totalExpensesAmt > 0): ?>
     <div class="sum-item">
-      <div class="sum-label">Expenses</div>
+      <div class="sum-label">Food Expenses</div>
       <div class="sum-value" style="color:#B45309"><?= money($totalExpensesAmt) ?></div>
     </div>
     <?php endif; ?>
@@ -633,7 +637,7 @@ body {
       <?php if ($wkExpDates): ?>
       <?php foreach ($wkExpDates as $expDate => $exps): ?>
       <div class="date-header" style="background:#FEF3C7;border-color:#FCD34D">
-        <div class="date-label" style="color:#92400E">🧾 <?= date('l, d F Y', strtotime($expDate)) ?> — Expenses</div>
+        <div class="date-label" style="color:#92400E">🧾 <?= date('l, d F Y', strtotime($expDate)) ?> — Food Expenses</div>
         <div class="date-total" style="color:#92400E"><?= money(array_sum(array_column($exps,'amount'))) ?></div>
       </div>
       <?php foreach ($exps as $ex): ?>
@@ -672,7 +676,7 @@ body {
         <?php endif; ?>
         <?php if ($wkExpTotal > 0): ?>
         <div class="week-sub-item">
-          <div class="week-sub-item-label">Expenses</div>
+          <div class="week-sub-item-label">Food Expenses</div>
           <div class="week-sub-item-val" style="color:#B45309"><?= money($wkExpTotal) ?></div>
         </div>
         <?php endif; ?>
@@ -707,7 +711,7 @@ body {
       <?php endif; ?>
       <?php if ($totalExpensesAmt > 0): ?>
       <div class="grand-item">
-        <div class="grand-item-label">Expenses</div>
+        <div class="grand-item-label">Food Expenses</div>
         <div class="grand-item-val" style="color:#FCD34D"><?= money($totalExpensesAmt) ?></div>
       </div>
       <?php endif; ?>

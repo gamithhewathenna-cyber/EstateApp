@@ -281,7 +281,9 @@ if ($tab === 'costs' && $isAdmin) {
             ORDER BY week_num ASC",
             array_merge([$estateId,$estateId,$estateId,$estateId], $sectionParams, [$selCostMonth]));
 
-        // Expenses per week — include section expenses AND general (no section) expenses
+        // Expenses per week — include section expenses AND general (no section) expenses.
+        // Only Food expenses count toward assignment cost reports, and only when we paid for it
+        // (owner/client-provided food is logged for record-keeping but excluded here).
         $weeklyExpenses = DB::fetchAll("SELECT
             WEEK(expense_date, 1) as week_num,
             expense_type,
@@ -290,6 +292,7 @@ if ($tab === 'costs' && $isAdmin) {
             WHERE estate_id=?
             AND (plantation_id=? OR plantation_id IS NULL OR plantation_id=0)
             AND DATE_FORMAT(expense_date,'%Y-%m')=?
+            AND expense_type='Food' AND food_provided_by='us'
             GROUP BY WEEK(expense_date,1), expense_type
             ORDER BY week_num, expense_type", [$estateId,$selCostSection,$selCostMonth]);
 
@@ -301,7 +304,8 @@ if ($tab === 'costs' && $isAdmin) {
         $totalExpenses = DB::fetchOne("SELECT COALESCE(SUM(amount),0) as total FROM expenses
             WHERE estate_id=?
             AND (plantation_id=? OR plantation_id IS NULL OR plantation_id=0)
-            AND DATE_FORMAT(expense_date,'%Y-%m')=?",
+            AND DATE_FORMAT(expense_date,'%Y-%m')=?
+            AND expense_type='Food' AND food_provided_by='us'",
             [$estateId,$selCostSection,$selCostMonth]);
 
         // Monthly breakdown this year
@@ -1188,7 +1192,7 @@ require_once __DIR__ . '/includes/header.php';
               <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:700;color:var(--green-700);border-bottom:1px solid #e8ede5">Plucking KG</th>
               <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:700;color:var(--green-700);border-bottom:1px solid #e8ede5">Plucking Cost</th>
               <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:700;color:var(--green-700);border-bottom:1px solid #e8ede5">Other Work</th>
-              <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:700;color:var(--amber-600);border-bottom:1px solid #e8ede5">Expenses</th>
+              <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:700;color:var(--amber-600);border-bottom:1px solid #e8ede5">Food Expenses</th>
               <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:700;color:var(--green-700);border-bottom:1px solid #e8ede5">Total Cost</th>
               <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:700;color:var(--green-700);border-bottom:1px solid #e8ede5">Workers</th>
             </tr>

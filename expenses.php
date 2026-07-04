@@ -32,15 +32,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $providedBy = ($_POST['food_provided_by'] ?? 'us') === 'owner' ? 'owner' : 'us';
 
         if (!array_key_exists($type, $presetItems)) $type = 'Miscellaneous';
-        $isFreeFood = ($type === 'Food' && $providedBy === 'owner');
-        if ($isFreeFood) { $amt = 0; $qty = 1; }
-        if ($amt <= 0 && !$isFreeFood) { flash('error','Amount must be greater than 0.'); redirect('/expenses.php'); }
+        if ($amt <= 0) { flash('error','Amount must be greater than 0.'); redirect('/expenses.php'); }
 
-        $totalAmt = $isFreeFood ? 0 : round($amt * $qty, 2);
+        $totalAmt = round($amt * $qty, 2);
 
         DB::insert("INSERT INTO expenses (estate_id,expense_date,plantation_id,expense_type,amount,food_provided_by,notes,created_by) VALUES (?,?,?,?,?,?,?,?)",
             [$estateId, $date, $pid, $type, $totalAmt, ($type==='Food'?$providedBy:'us'), $notes, $uid]);
-        flash('success', $type . ' expense of ' . ($isFreeFood ? 'Rs. 0 (provided by owner/client)' : money($totalAmt)) . ' added.');
+        flash('success', $type . ' expense of ' . money($totalAmt) . ' added.');
         redirect('/expenses.php');
     }
 
@@ -52,9 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $amt   = (float)($_POST['amount'] ?? 0);
         $notes = trim($_POST['notes'] ?? '');
         $providedBy = ($_POST['food_provided_by'] ?? 'us') === 'owner' ? 'owner' : 'us';
-        $isFreeFood = ($type === 'Food' && $providedBy === 'owner');
-        if ($isFreeFood) $amt = 0;
-        if ($amt <= 0 && !$isFreeFood) { flash('error','Amount must be greater than 0.'); redirect('/expenses.php'); }
+        if ($amt <= 0) { flash('error','Amount must be greater than 0.'); redirect('/expenses.php'); }
         DB::execute("UPDATE expenses SET expense_date=?,plantation_id=?,expense_type=?,amount=?,food_provided_by=?,notes=?,updated_at=NOW() WHERE id=?",
             [$date,$pid,$type,$amt,($type==='Food'?$providedBy:'us'),$notes,$id]);
         flash('success','Expense updated.');
@@ -199,12 +195,15 @@ require_once __DIR__ . '/includes/header.php';
         <div style="display:flex;gap:8px">
           <div class="fp-option <?= $initialFpVal==='us'?'selected':'' ?>" id="fp-us" onclick="selectFoodProvider('us')">
             <i class="ti ti-wallet fp-icon" style="color:var(--amber-600)"></i>
-            We Provide (Cost)
+            We Provide
           </div>
           <div class="fp-option <?= $initialFpVal==='owner'?'selected':'' ?>" id="fp-owner" onclick="selectFoodProvider('owner')">
             <i class="ti ti-gift fp-icon" style="color:var(--green-600)"></i>
-            Owner/Client Provides (No Cost)
+            Owner / Client Provides
           </div>
+        </div>
+        <div style="font-size:11px;color:var(--gray-400);margin-top:6px">
+          Owner/client-provided food is still logged here but excluded from assignment cost reports.
         </div>
       </div>
 
@@ -242,11 +241,6 @@ require_once __DIR__ . '/includes/header.php';
           <div style="background:var(--green-50);border:1px solid var(--green-100);border-radius:var(--radius-md);padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
             <span style="font-size:13px;color:var(--green-800)"><i class="ti ti-calculator"></i> Total Amount</span>
             <span style="font-size:18px;font-weight:700;color:var(--green-600)" id="exp-total">Rs. 0</span>
-          </div>
-        </div>
-        <div class="form-group col-full" id="exp-no-cost-msg" style="display:none">
-          <div style="background:var(--green-50);border:1px solid var(--green-200);border-radius:var(--radius-md);padding:10px 14px;display:flex;align-items:center;gap:8px;color:var(--green-800);font-size:13px">
-            <i class="ti ti-gift" style="font-size:18px"></i> No cost — food provided by owner/client
           </div>
         </div>
         <?php else: ?>
@@ -413,7 +407,7 @@ require_once __DIR__ . '/includes/header.php';
       <?php foreach ($rows as $e):
         $meta = $presetItems[$e['expense_type']] ?? $presetItems['Miscellaneous'];
         $isEditing = ($editId === (int)$e['id']);
-        $isFreeFood = ($e['expense_type'] === 'Food' && ($e['food_provided_by'] ?? 'us') === 'owner');
+        $isOwnerFood = ($e['expense_type'] === 'Food' && ($e['food_provided_by'] ?? 'us') === 'owner');
       ?>
       <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid #f8f8f6;<?= $isEditing?'background:var(--amber-50);border-radius:8px;':'' ?>"
            onmouseover="this.style.background=this.style.background||'#f8faf5'" onmouseout="this.style.background='<?= $isEditing?'var(--amber-50)':'' ?>'">
@@ -423,8 +417,8 @@ require_once __DIR__ . '/includes/header.php';
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:700">
             <?= sanitize($e['expense_type']) ?>
-            <?php if ($isFreeFood): ?>
-            <span class="pill pill-green" style="margin-left:6px"><i class="ti ti-gift"></i> Owner Provided</span>
+            <?php if ($isOwnerFood): ?>
+            <span class="pill pill-green" title="Logged for record-keeping, excluded from assignment cost reports" style="margin-left:6px"><i class="ti ti-gift"></i> Owner Provided</span>
             <?php endif; ?>
           </div>
           <div style="font-size:11px;color:var(--gray-400)">
@@ -432,7 +426,7 @@ require_once __DIR__ . '/includes/header.php';
             <?php if ($e['notes']): ?> · <?= sanitize($e['notes']) ?><?php endif; ?>
           </div>
         </div>
-        <div style="font-size:14px;font-weight:700;color:<?= $isFreeFood?'var(--green-600)':'var(--amber-600)' ?>;white-space:nowrap"><?= $isFreeFood?'No Cost':money($e['amount']) ?></div>
+        <div style="font-size:14px;font-weight:700;color:var(--amber-600);white-space:nowrap"><?= money($e['amount']) ?></div>
         <!-- Edit -->
         <a href="expenses.php?edit=<?= $e['id'] ?>&from=<?= $dateFrom ?>&to=<?= $dateTo ?>"
            class="btn btn-outline btn-sm" title="Edit">
@@ -499,48 +493,15 @@ function selectFoodProvider(val) {
   var fpUs = document.getElementById('fp-us'), fpOwner = document.getElementById('fp-owner');
   if (fpUs) fpUs.classList.toggle('selected', val === 'us');
   if (fpOwner) fpOwner.classList.toggle('selected', val === 'owner');
-
-  var noCost = (val === 'owner');
-  var qtyGroup   = document.getElementById('exp-qty-group');
-  var priceGroup = document.getElementById('exp-price-group');
-  var totalGroup = document.getElementById('exp-total-group');
-  var msg        = document.getElementById('exp-no-cost-msg');
-  var priceInput = document.getElementById('exp-unit-price');
-  var qtyInput   = document.getElementById('exp-qty');
-
-  if (qtyGroup)   qtyGroup.style.display   = noCost ? 'none' : '';
-  if (priceGroup) priceGroup.style.display = noCost ? 'none' : '';
-  if (totalGroup) totalGroup.style.display = noCost ? 'none' : '';
-  if (msg)        msg.style.display        = noCost ? 'flex' : 'none';
-  if (priceInput) {
-    priceInput.required = !noCost;
-    if (noCost) priceInput.value = 0;
-  }
-  if (qtyInput && noCost) qtyInput.value = 1;
-
-  var editAmount = document.getElementById('edit-amount-input');
-  if (editAmount) {
-    editAmount.required = !noCost;
-    editAmount.readOnly = noCost;
-    if (noCost) editAmount.value = 0;
-  }
-
-  calcExpTotal();
 }
 
 function calcExpTotal() {
-  var qty        = parseFloat(document.getElementById('exp-qty')?.value) || 0;
-  var price      = parseFloat(document.getElementById('exp-unit-price')?.value) || 0;
-  var providedBy = document.getElementById('food-provided-by')?.value;
-  var total      = (providedBy === 'owner') ? 0 : qty * price;
-  var el         = document.getElementById('exp-total');
+  var qty   = parseFloat(document.getElementById('exp-qty')?.value) || 0;
+  var price = parseFloat(document.getElementById('exp-unit-price')?.value) || 0;
+  var total = qty * price;
+  var el    = document.getElementById('exp-total');
   if (el) el.textContent = 'Rs. ' + Math.round(total).toLocaleString();
 }
-
-document.addEventListener('DOMContentLoaded', function() {
-  var fpVal = document.getElementById('food-provided-by')?.value;
-  if (fpVal) selectFoodProvider(fpVal);
-});
 
 // Validate category selected before submit
 document.getElementById('expense-form').addEventListener('submit', function(e) {
