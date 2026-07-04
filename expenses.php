@@ -195,15 +195,15 @@ require_once __DIR__ . '/includes/header.php';
         <div style="display:flex;gap:8px">
           <div class="fp-option <?= $initialFpVal==='us'?'selected':'' ?>" id="fp-us" onclick="selectFoodProvider('us')">
             <i class="ti ti-wallet fp-icon" style="color:var(--amber-600)"></i>
-            We Provide
+            Worker Paid
           </div>
           <div class="fp-option <?= $initialFpVal==='owner'?'selected':'' ?>" id="fp-owner" onclick="selectFoodProvider('owner')">
             <i class="ti ti-gift fp-icon" style="color:var(--green-600)"></i>
-            Owner / Client Provides
+            We Paid
           </div>
         </div>
         <div style="font-size:11px;color:var(--gray-400);margin-top:6px">
-          Owner/client-provided food is still logged here but excluded from assignment cost reports.
+          "We Paid" food costs are still logged here but excluded from assignment cost reports.
         </div>
       </div>
 
@@ -418,7 +418,7 @@ require_once __DIR__ . '/includes/header.php';
           <div style="font-size:13px;font-weight:700">
             <?= sanitize($e['expense_type']) ?>
             <?php if ($isOwnerFood): ?>
-            <span class="pill pill-green" title="Logged for record-keeping, excluded from assignment cost reports" style="margin-left:6px"><i class="ti ti-gift"></i> Owner Provided</span>
+            <span class="pill pill-green" title="Logged for record-keeping, excluded from assignment cost reports" style="margin-left:6px"><i class="ti ti-gift"></i> We Paid</span>
             <?php endif; ?>
           </div>
           <div style="font-size:11px;color:var(--gray-400)">
