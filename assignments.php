@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $wtUnit       = strtolower(trim($wt['unit_label'] ?? ''));
         $wtName       = strtolower(trim($wt['name'] ?? ''));
         $isPluckingWT = ($wtUnit === 'kg');                          // KG = plucking
-        $isSprayingWT = in_array($wtUnit, ['tank','tanks']);          // Tank = spraying
+        $isSprayingWT = in_array($wtUnit, ['tank','tanks','tree','trees']); // Tank/Tree = manual per-worker qty
         $isAutoUnit   = (!$isPluckingWT && !$isSprayingWT);           // Day/Unit = auto
 
         $approvalStatus = $isAdmin ? 'approved' : 'pending';
@@ -1316,8 +1316,8 @@ require_once __DIR__ . '/includes/header.php';
 
 <script>
 // Work type modes:
-// 'plucking'  = Tea Plucking   → per-worker KG input (show qty input)
-// 'spraying'  = Tank Spraying  → per-worker Tank qty input
+// 'plucking'  = Tea Plucking            → per-worker KG input (show qty input)
+// 'spraying'  = Tank Spraying / Per Tree → per-worker qty input (Tank/Tree count, etc.)
 // 'auto'      = Clearing/Helper/Basic/TeaCutting → 1 unit auto per person
 
 var currentRate = <?= (float)($workTypes[0]['rate_per_unit']??50) ?>;
@@ -1327,8 +1327,14 @@ var currentUnit = '<?= sanitize($workTypes[0]['unit_label']??'KG') ?>';
 function getModeFromUnit(unit) {
   var u = (unit || '').toLowerCase().trim();
   if (u === 'kg')                  return 'plucking';
-  if (u === 'tank' || u === 'tanks') return 'spraying';
+  if (u === 'tank' || u === 'tanks' || u === 'tree' || u === 'trees') return 'spraying';
   return 'auto';
+}
+
+// Pluralized display label for the current unit (Tank → Tanks, Tree → Trees)
+function unitPluralLabel(unit) {
+  unit = unit || '';
+  return unit + (unit.slice(-1).toLowerCase() === 's' ? '' : 's');
 }
 
 var currentMode = getModeFromUnit('<?= strtolower(sanitize($workTypes[0]['unit_label']??'KG')) ?>');
@@ -1350,7 +1356,7 @@ function selectWT(el, id, rate, unit, unitLower) {
   // Update hint message
   var hints = {
     plucking: 'Enter KG for each selected worker individually.',
-    spraying: 'Enter number of tanks per worker.',
+    spraying: 'Enter number of ' + unitPluralLabel(unit).toLowerCase() + ' per worker.',
     auto:     'Each selected worker = 1 ' + unit + ' automatically.'
   };
   var hintEl = document.getElementById('qty-hint');
@@ -1382,11 +1388,11 @@ function updateWorkerRows() {
         if (badge) { badge.textContent='KG'; badge.style.background='var(--green-50)'; badge.style.color='var(--green-700)'; badge.style.borderColor='var(--green-200)'; }
       }
     } else if (currentMode === 'spraying') {
-      // Show tank qty input
+      // Show manual qty input (Tank / Tree / etc.)
       if (qtyWrap) {
         qtyWrap.style.display = 'flex';
         var badge = qtyWrap.querySelector('.unit-badge');
-        if (badge) { badge.textContent='Tanks'; badge.style.background='var(--teal-50)'; badge.style.color='var(--teal-700)'; badge.style.borderColor='var(--teal-100)'; }
+        if (badge) { badge.textContent=unitPluralLabel(currentUnit); badge.style.background='var(--teal-50)'; badge.style.color='var(--teal-700)'; badge.style.borderColor='var(--teal-100)'; }
       }
     } else {
       // Auto mode — show "1 Unit ✓" badge, hide qty input
@@ -1483,7 +1489,7 @@ function calcTotal() {
         breakdown += ' (' + workerCount + ' regular + ' + tempCount2 + ' temp)';
       noteEl.textContent = breakdown + ' = Rs.' + Math.round(total).toLocaleString();
     } else if (currentMode === 'spraying' && totalWorkers > 0) {
-      noteEl.textContent = totalWorkers + ' worker(s) — ' + Math.round(totalUnits) + ' tank(s) total';
+      noteEl.textContent = totalWorkers + ' worker(s) — ' + Math.round(totalUnits) + ' ' + unitPluralLabel(currentUnit).toLowerCase() + ' total';
     } else if (currentMode === 'plucking' && totalWorkers > 0) {
       noteEl.textContent = totalWorkers + ' worker(s) — ' + totalUnits.toFixed(1) + ' kg total';
     } else {
@@ -1548,7 +1554,7 @@ function addTempWorker() {
   // Determine if we need qty input
   var needsQty = (currentMode === 'plucking' || currentMode === 'spraying');
   var unitLabel = currentUnit;
-  var placeholder = currentMode === 'plucking' ? 'KG' : (currentMode === 'spraying' ? 'Tanks' : '');
+  var placeholder = currentMode === 'plucking' ? 'KG' : (currentMode === 'spraying' ? unitPluralLabel(currentUnit) : '');
 
   row.innerHTML =
     '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">' +

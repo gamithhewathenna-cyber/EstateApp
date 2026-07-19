@@ -663,8 +663,8 @@ require_once __DIR__ . '/includes/header.php';
           </div>
           <div class="form-group">
             <label>Unit Label *</label>
-            <input type="text" name="wt_unit" placeholder="KG / Day / Unit / Tank" value="Unit">
-            <div style="font-size:11px;color:var(--gray-400);margin-top:3px">What you measure (KG, Day, Unit...)</div>
+            <input type="text" name="wt_unit" placeholder="KG / Day / Unit / Tank / Tree" value="Unit">
+            <div style="font-size:11px;color:var(--gray-400);margin-top:3px">What you measure (KG, Day, Unit, Tank, Tree...). Tank/Tree types get a manual per-worker quantity input, like Tank Spraying.</div>
           </div>
           <div class="form-group">
             <label>Rate per Unit (Rs.) *</label>
