@@ -166,6 +166,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('/settings.php#worktypes');
     }
 
+    // ── DELETE WORK TYPE (soft delete — keeps existing assignment records) ──
+    if ($action === 'delete_work_type') {
+        $id = (int)($_POST['wt_id'] ?? 0);
+        if (!$id) { flash('error','Invalid work type.'); redirect('/settings.php#worktypes'); }
+        // Never a hard DELETE: work_type_id is referenced by daily_assignments
+        // with ON DELETE CASCADE, which would erase historical records.
+        DB::execute("UPDATE work_types SET is_active=0, is_deleted=1 WHERE id=? AND estate_id=?", [$id, $estateId]);
+        flash('success', 'Work type deleted. Existing assignment records are unaffected.');
+        redirect('/settings.php#worktypes');
+    }
+
     // ── RESET OTHER USER PASSWORD (admin) ─────────
     if ($action === 'reset_user_password') {
         Auth::requireAdmin();
@@ -196,7 +207,7 @@ $currentUser = DB::fetchOne("SELECT * FROM users WHERE id=?", [Auth::user()['id'
 $allUsers    = DB::fetchAll("SELECT id, name, username, role, email, is_active FROM users ORDER BY role, name");
 
 // Load work types
-$workTypes = DB::fetchAll("SELECT * FROM work_types WHERE estate_id=? ORDER BY is_active DESC, id ASC", [$estateId]);
+$workTypes = DB::fetchAll("SELECT * FROM work_types WHERE estate_id=? AND is_deleted=0 ORDER BY is_active DESC, id ASC", [$estateId]);
 
 require_once __DIR__ . '/includes/header.php';
 ?>
@@ -642,6 +653,13 @@ require_once __DIR__ . '/includes/header.php';
             <button type="submit" class="btn btn-outline btn-sm" style="color:<?= $wt['is_active']?'var(--amber-600)':'var(--green-600)' ?>">
               <i class="ti ti-<?= $wt['is_active']?'eye-off':'eye' ?>"></i>
               <?= $wt['is_active']?'Disable':'Enable' ?>
+            </button>
+          </form>
+          <form method="POST" style="display:inline" onsubmit="return confirm('Delete this work type? It will be removed from this list, but all existing assignment records that use it are kept exactly as they are.')">
+            <input type="hidden" name="action" value="delete_work_type">
+            <input type="hidden" name="wt_id" value="<?= $wt['id'] ?>">
+            <button type="submit" class="btn btn-outline btn-sm" style="color:var(--red-600)" title="Delete work type (keeps existing records)">
+              <i class="ti ti-trash"></i> Delete
             </button>
           </form>
         </div>
