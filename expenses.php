@@ -73,6 +73,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash('success', 'Expense marked as ' . ucfirst($newStatus) . '.');
         redirect('/expenses.php?from='.$_POST['from'].'&to='.$_POST['to']);
     }
+
+    // ── BULK EXPENSE PAYMENT STATUS ───────────────
+    if ($action === 'bulk_expense_paid') {
+        $ids    = $_POST['bulk_ids'] ?? [];
+        $status = $_POST['bulk_status'] ?? 'paid';
+        if (!in_array($status, ['paid','pending'])) $status = 'paid';
+        if (!empty($ids)) {
+            $ids = array_map('intval', $ids);
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            DB::execute("UPDATE expenses SET payment_status=? WHERE id IN ($placeholders) AND estate_id=?",
+                array_merge([$status], $ids, [$estateId]));
+            flash('success', count($ids) . ' expense(s) marked as ' . ucfirst($status) . '.');
+        }
+        redirect('/expenses.php?from='.$_POST['from'].'&to='.$_POST['to']);
+    }
 }
 
 // Date range
@@ -393,6 +408,36 @@ require_once __DIR__ . '/includes/header.php';
       <span style="font-size:12px;color:var(--gray-400)"><?= count($expenses) ?> records · <?= money($grandTotal) ?></span>
     </div>
 
+    <?php $foodExpenseIds = array_column(array_filter($expenses, fn($e)=>$e['expense_type']==='Food'), 'id'); ?>
+    <?php if ($foodExpenseIds): ?>
+    <div style="display:flex;align-items:center;gap:6px;margin:6px 0 8px">
+      <input type="checkbox" id="exp-select-all" onchange="toggleSelectAllExp(this)"
+             style="width:15px;height:15px;accent-color:var(--green-600);cursor:pointer">
+      <label for="exp-select-all" style="font-size:12px;color:var(--gray-500);cursor:pointer">Select all Food expenses</label>
+    </div>
+    <!-- Bulk payment bar -->
+    <div id="exp-bulk-bar" style="display:none;background:var(--green-50);border:1px solid var(--green-200);border-radius:var(--radius-md);padding:8px 12px;margin-bottom:10px;align-items:center;gap:8px;flex-wrap:wrap">
+      <span style="font-size:12px;font-weight:700;color:var(--green-800)" id="exp-bulk-count">0 selected</span>
+      <form method="POST" id="exp-bulk-form" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <input type="hidden" name="action" value="bulk_expense_paid">
+        <input type="hidden" name="from" value="<?= $dateFrom ?>">
+        <input type="hidden" name="to" value="<?= $dateTo ?>">
+        <div id="exp-bulk-ids-container"></div>
+        <button type="submit" name="bulk_status" value="paid"
+                class="btn btn-sm" style="background:var(--green-600);color:#fff;padding:6px 14px">
+          <i class="ti ti-circle-check"></i> Mark Selected as Paid
+        </button>
+        <button type="submit" name="bulk_status" value="pending"
+                class="btn btn-outline btn-sm" style="color:var(--gray-600);padding:6px 12px">
+          <i class="ti ti-clock"></i> Mark as Pending
+        </button>
+        <button type="button" onclick="clearExpBulkSelection()" class="btn btn-outline btn-sm" style="color:var(--gray-400)">
+          <i class="ti ti-x"></i> Clear
+        </button>
+      </form>
+    </div>
+    <?php endif; ?>
+
     <?php if (!$expenses): ?>
       <div class="empty-state"><i class="ti ti-receipt-off"></i><p>No expenses in this period.<br>Add one using the form.</p></div>
     <?php else: ?>
@@ -421,6 +466,10 @@ require_once __DIR__ . '/includes/header.php';
       ?>
       <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid #f8f8f6;<?= $isEditing?'background:var(--amber-50);border-radius:8px;':'' ?>"
            onmouseover="this.style.background=this.style.background||'#f8faf5'" onmouseout="this.style.background='<?= $isEditing?'var(--amber-50)':'' ?>'">
+        <?php if ($e['expense_type'] === 'Food'): ?>
+        <input type="checkbox" class="bulk-check-exp" value="<?= $e['id'] ?>" onchange="updateExpBulkSelection()"
+               style="width:15px;height:15px;accent-color:var(--green-600);cursor:pointer;flex-shrink:0">
+        <?php endif; ?>
         <div style="width:34px;height:34px;border-radius:9px;background:<?= $meta['color'] ?>;display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <i class="ti <?= $meta['icon'] ?>" style="color:<?= $meta['text'] ?>;font-size:17px"></i>
         </div>
@@ -531,6 +580,53 @@ document.getElementById('expense-form').addEventListener('submit', function(e) {
   var type = document.getElementById('selected-type').value;
   if (!type) { e.preventDefault(); alert('Please select an expense category.'); }
 });
+
+// ── BULK EXPENSE PAYMENT JS ─────────────────────────────
+function toggleSelectAllExp(masterCb) {
+  document.querySelectorAll('.bulk-check-exp').forEach(function(cb) { cb.checked = masterCb.checked; });
+  updateExpBulkSelection();
+}
+
+function updateExpBulkSelection() {
+  var checked   = document.querySelectorAll('.bulk-check-exp:checked');
+  var bar       = document.getElementById('exp-bulk-bar');
+  var countEl   = document.getElementById('exp-bulk-count');
+  var container = document.getElementById('exp-bulk-ids-container');
+
+  if (!bar) return;
+
+  if (container) {
+    container.innerHTML = '';
+    checked.forEach(function(cb) {
+      var inp = document.createElement('input');
+      inp.type = 'hidden';
+      inp.name = 'bulk_ids[]';
+      inp.value = cb.value;
+      container.appendChild(inp);
+    });
+  }
+
+  var selectAll = document.getElementById('exp-select-all');
+  if (checked.length > 0) {
+    bar.style.display = 'flex';
+    if (countEl) countEl.textContent = checked.length + ' selected';
+    var all = document.querySelectorAll('.bulk-check-exp');
+    if (selectAll) {
+      selectAll.indeterminate = (checked.length > 0 && checked.length < all.length);
+      selectAll.checked = (checked.length === all.length && all.length > 0);
+    }
+  } else {
+    bar.style.display = 'none';
+    if (selectAll) { selectAll.checked = false; selectAll.indeterminate = false; }
+  }
+}
+
+function clearExpBulkSelection() {
+  document.querySelectorAll('.bulk-check-exp').forEach(function(cb) { cb.checked = false; });
+  var selectAll = document.getElementById('exp-select-all');
+  if (selectAll) { selectAll.checked = false; selectAll.indeterminate = false; }
+  updateExpBulkSelection();
+}
 </script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
