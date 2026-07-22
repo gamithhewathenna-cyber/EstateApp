@@ -63,6 +63,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash('success','Expense deleted.');
         redirect('/expenses.php?from='.$_POST['from'].'&to='.$_POST['to']);
     }
+
+    // ── TOGGLE EXPENSE PAYMENT STATUS ─────────────
+    if ($action === 'toggle_expense_paid') {
+        $id      = (int)($_POST['id'] ?? 0);
+        $current = DB::fetchOne("SELECT payment_status FROM expenses WHERE id=? AND estate_id=?", [$id, $estateId]);
+        $newStatus = ($current && $current['payment_status'] === 'paid') ? 'pending' : 'paid';
+        DB::execute("UPDATE expenses SET payment_status=? WHERE id=? AND estate_id=?", [$newStatus, $id, $estateId]);
+        flash('success', 'Expense marked as ' . ucfirst($newStatus) . '.');
+        redirect('/expenses.php?from='.$_POST['from'].'&to='.$_POST['to']);
+    }
 }
 
 // Date range
@@ -427,6 +437,19 @@ require_once __DIR__ . '/includes/header.php';
           </div>
         </div>
         <div style="font-size:14px;font-weight:700;color:var(--amber-600);white-space:nowrap"><?= money($e['amount']) ?></div>
+        <!-- Paid toggle (Food expenses only — these are the ones tracked in the Cost Report) -->
+        <?php if ($e['expense_type'] === 'Food'): $isPaidExp = ($e['payment_status'] ?? 'pending') === 'paid'; ?>
+        <form method="POST" style="display:inline">
+          <input type="hidden" name="action" value="toggle_expense_paid">
+          <input type="hidden" name="id" value="<?= $e['id'] ?>">
+          <input type="hidden" name="from" value="<?= $dateFrom ?>">
+          <input type="hidden" name="to" value="<?= $dateTo ?>">
+          <button type="submit" title="Toggle payment" style="border:none;cursor:pointer;border-radius:20px;padding:3px 9px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;gap:3px;white-space:nowrap;<?= $isPaidExp?'background:#d1fae5;color:#065f46;border:1px solid #6ee7b7':'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5' ?>">
+            <i class="ti ti-<?= $isPaidExp?'circle-check':'clock' ?>" style="font-size:11px"></i>
+            <?= $isPaidExp?'Paid':'Pending' ?>
+          </button>
+        </form>
+        <?php endif; ?>
         <!-- Edit -->
         <a href="expenses.php?edit=<?= $e['id'] ?>&from=<?= $dateFrom ?>&to=<?= $dateTo ?>"
            class="btn btn-outline btn-sm" title="Edit">
