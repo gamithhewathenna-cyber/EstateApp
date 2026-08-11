@@ -88,6 +88,27 @@ foreach ($fertDue as $fc) {
     else                $fertOk[]      = $fc;
 }
 
+// Clearing upcoming reminders (all active sections, sorted by urgency)
+// Wrapped in try/catch: if the clearing_cycles migration hasn't been
+// applied yet, the dashboard should still load without this widget.
+try {
+    $clearingDue = DB::fetchAll("SELECT cc.*, p.name as plantation_name
+        FROM clearing_cycles cc JOIN plantations p ON cc.plantation_id=p.id
+        JOIN (SELECT plantation_id, MAX(id) as max_id FROM clearing_cycles WHERE estate_id=? GROUP BY plantation_id) latest ON cc.id=latest.max_id
+        WHERE cc.estate_id=? AND p.estate_id=? AND p.is_active=1 AND cc.next_due_date IS NOT NULL AND cc.next_due_date != ''
+        ORDER BY cc.next_due_date ASC", [$estateId,$estateId,$estateId]);
+} catch (Exception $e) { $clearingDue = []; }
+
+// Pre-group clearing cycles by urgency
+$clearOverdue = []; $clearUrgent = []; $clearSoon = []; $clearOk = [];
+foreach ($clearingDue as $cc) {
+    $cd = daysUntil($cc['next_due_date']);
+    if ($cd <= 0)       $clearOverdue[] = $cc;
+    elseif ($cd <= 7)   $clearUrgent[]  = $cc;
+    elseif ($cd <= 21)  $clearSoon[]    = $cc;
+    else                $clearOk[]      = $cc;
+}
+
 // Recent expenses in range
 $recentExp = DB::fetchAll("SELECT e.*, p.name as plantation_name 
     FROM expenses e LEFT JOIN plantations p ON e.plantation_id=p.id 
@@ -246,71 +267,142 @@ require_once __DIR__ . '/includes/header.php';
   </div>
 </div>
 
-<!-- ── UPCOMING FERTILIZER REMINDERS ── -->
-<div class="card" style="margin-bottom:20px">
-  <div class="card-header" style="margin-bottom:14px">
-    <div class="card-title"><i class="ti ti-bell-ringing" style="color:var(--amber-500)"></i> Upcoming Fertilizer Reminders</div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <?php if (count($fertOverdue)): ?>
-        <span style="font-size:11px;font-weight:700;background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;padding:2px 8px;border-radius:20px"><?= count($fertOverdue) ?> Overdue</span>
-      <?php endif; ?>
-      <?php if (count($fertUrgent)): ?>
-        <span style="font-size:11px;font-weight:700;background:#fffbeb;color:#d97706;border:1px solid #fcd34d;padding:2px 8px;border-radius:20px"><?= count($fertUrgent) ?> Urgent</span>
-      <?php endif; ?>
-      <a href="fertilizer.php" class="card-action">View all</a>
-    </div>
-  </div>
+<!-- ── UPCOMING REMINDERS (Fertilizer + Clearing) ── -->
+<div class="dash-section-grid">
 
-  <?php if ($fertDue): ?>
-  <div style="display:flex;flex-direction:column;gap:8px">
-
-  <?php
-  $groups = [
-    ['items'=>$fertOverdue, 'label'=>'Overdue',       'border'=>'#ef4444', 'bg'=>'#fef2f2', 'badge_bg'=>'#dc2626', 'icon'=>'ti-alert-triangle'],
-    ['items'=>$fertUrgent,  'label'=>'Due This Week',  'border'=>'#f59e0b', 'bg'=>'#fffbeb', 'badge_bg'=>'#d97706', 'icon'=>'ti-clock-exclamation'],
-    ['items'=>$fertSoon,    'label'=>'Due in 3 Weeks', 'border'=>'#3b82f6', 'bg'=>'#eff6ff', 'badge_bg'=>'#2563eb', 'icon'=>'ti-calendar-event'],
-    ['items'=>$fertOk,      'label'=>'Upcoming',       'border'=>'#22c55e', 'bg'=>'#f0fdf4', 'badge_bg'=>'#16a34a', 'icon'=>'ti-calendar-check'],
-  ];
-  foreach ($groups as $g):
-    if (!count($g['items'])) continue;
-  ?>
-  <div style="margin-bottom:4px">
-    <div style="font-size:10px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:flex;align-items:center;gap:5px">
-      <i class="ti <?= $g['icon'] ?>" style="font-size:12px;color:<?= $g['border'] ?>"></i>
-      <?= $g['label'] ?>
+  <!-- Fertilizer Reminders -->
+  <div class="card">
+    <div class="card-header" style="margin-bottom:14px">
+      <div class="card-title"><i class="ti ti-bell-ringing" style="color:var(--amber-500)"></i> Upcoming Fertilizer Reminders</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <?php if (count($fertOverdue)): ?>
+          <span style="font-size:11px;font-weight:700;background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;padding:2px 8px;border-radius:20px"><?= count($fertOverdue) ?> Overdue</span>
+        <?php endif; ?>
+        <?php if (count($fertUrgent)): ?>
+          <span style="font-size:11px;font-weight:700;background:#fffbeb;color:#d97706;border:1px solid #fcd34d;padding:2px 8px;border-radius:20px"><?= count($fertUrgent) ?> Urgent</span>
+        <?php endif; ?>
+        <a href="fertilizer.php" class="card-action">View all</a>
+      </div>
     </div>
-    <?php foreach ($g['items'] as $f):
-      $days    = daysUntil($f['next_due_date']);
-      $dueText = $days < 0  ? abs($days).' day'.( abs($days)>1?'s':'').' overdue'
-               : ($days === 0 ? 'Due today'
-               : 'In '.$days.' day'.($days>1?'s':''));
+
+    <?php if ($fertDue): ?>
+    <div style="display:flex;flex-direction:column;gap:8px">
+
+    <?php
+    $groups = [
+      ['items'=>$fertOverdue, 'label'=>'Overdue',       'border'=>'#ef4444', 'bg'=>'#fef2f2', 'badge_bg'=>'#dc2626', 'icon'=>'ti-alert-triangle'],
+      ['items'=>$fertUrgent,  'label'=>'Due This Week',  'border'=>'#f59e0b', 'bg'=>'#fffbeb', 'badge_bg'=>'#d97706', 'icon'=>'ti-clock-exclamation'],
+      ['items'=>$fertSoon,    'label'=>'Due in 3 Weeks', 'border'=>'#3b82f6', 'bg'=>'#eff6ff', 'badge_bg'=>'#2563eb', 'icon'=>'ti-calendar-event'],
+      ['items'=>$fertOk,      'label'=>'Upcoming',       'border'=>'#22c55e', 'bg'=>'#f0fdf4', 'badge_bg'=>'#16a34a', 'icon'=>'ti-calendar-check'],
+    ];
+    foreach ($groups as $g):
+      if (!count($g['items'])) continue;
     ?>
-    <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:<?= $g['bg'] ?>;border-left:3px solid <?= $g['border'] ?>;border-radius:0 8px 8px 0;margin-bottom:6px">
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:700;color:var(--green-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-          <?= sanitize($f['plantation_name']) ?>
+    <div style="margin-bottom:4px">
+      <div style="font-size:10px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:flex;align-items:center;gap:5px">
+        <i class="ti <?= $g['icon'] ?>" style="font-size:12px;color:<?= $g['border'] ?>"></i>
+        <?= $g['label'] ?>
+      </div>
+      <?php foreach ($g['items'] as $f):
+        $days    = daysUntil($f['next_due_date']);
+        $dueText = $days < 0  ? abs($days).' day'.( abs($days)>1?'s':'').' overdue'
+                 : ($days === 0 ? 'Due today'
+                 : 'In '.$days.' day'.($days>1?'s':''));
+      ?>
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:<?= $g['bg'] ?>;border-left:3px solid <?= $g['border'] ?>;border-radius:0 8px 8px 0;margin-bottom:6px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;color:var(--green-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            <?= sanitize($f['plantation_name']) ?>
+          </div>
+          <div style="font-size:11px;color:var(--gray-500);margin-top:2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span><i class="ti ti-droplet" style="font-size:11px"></i> <?= sanitize($f['fertilizer_type']) ?></span>
+            <?php if (!empty($f['amount_kg'])): ?>
+            <span>· <?= sanitize($f['amount_kg']) ?> kg</span>
+            <?php endif; ?>
+            <span>· Last applied <?= fmtDate($f['applied_date']) ?></span>
+          </div>
         </div>
-        <div style="font-size:11px;color:var(--gray-500);margin-top:2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <span><i class="ti ti-droplet" style="font-size:11px"></i> <?= sanitize($f['fertilizer_type']) ?></span>
-          <?php if (!empty($f['amount_kg'])): ?>
-          <span>· <?= sanitize($f['amount_kg']) ?> kg</span>
-          <?php endif; ?>
-          <span>· Last applied <?= fmtDate($f['applied_date']) ?></span>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:11px;font-weight:800;color:#fff;background:<?= $g['badge_bg'] ?>;padding:3px 10px;border-radius:20px;white-space:nowrap"><?= $dueText ?></div>
+          <div style="font-size:10px;color:var(--gray-400);margin-top:3px"><?= fmtDate($f['next_due_date']) ?></div>
         </div>
       </div>
-      <div style="text-align:right;flex-shrink:0">
-        <div style="font-size:11px;font-weight:800;color:#fff;background:<?= $g['badge_bg'] ?>;padding:3px 10px;border-radius:20px;white-space:nowrap"><?= $dueText ?></div>
-        <div style="font-size:10px;color:var(--gray-400);margin-top:3px"><?= fmtDate($f['next_due_date']) ?></div>
-      </div>
+      <?php endforeach; ?>
     </div>
     <?php endforeach; ?>
-  </div>
-  <?php endforeach; ?>
 
+    </div>
+    <?php else: ?>
+      <div class="empty-state"><i class="ti ti-circle-check" style="color:var(--green-400)"></i><p>All fertilizer cycles are up to date</p></div>
+    <?php endif; ?>
   </div>
-  <?php else: ?>
-    <div class="empty-state"><i class="ti ti-circle-check" style="color:var(--green-400)"></i><p>All fertilizer cycles are up to date</p></div>
-  <?php endif; ?>
+
+  <!-- Clearing Reminders -->
+  <div class="card">
+    <div class="card-header" style="margin-bottom:14px">
+      <div class="card-title"><i class="ti ti-bell-ringing" style="color:var(--amber-500)"></i> Upcoming Clearing Reminders</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <?php if (count($clearOverdue)): ?>
+          <span style="font-size:11px;font-weight:700;background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;padding:2px 8px;border-radius:20px"><?= count($clearOverdue) ?> Overdue</span>
+        <?php endif; ?>
+        <?php if (count($clearUrgent)): ?>
+          <span style="font-size:11px;font-weight:700;background:#fffbeb;color:#d97706;border:1px solid #fcd34d;padding:2px 8px;border-radius:20px"><?= count($clearUrgent) ?> Urgent</span>
+        <?php endif; ?>
+        <a href="clearing.php" class="card-action">View all</a>
+      </div>
+    </div>
+
+    <?php if ($clearingDue): ?>
+    <div style="display:flex;flex-direction:column;gap:8px">
+
+    <?php
+    $clearGroups = [
+      ['items'=>$clearOverdue, 'label'=>'Overdue',       'border'=>'#ef4444', 'bg'=>'#fef2f2', 'badge_bg'=>'#dc2626', 'icon'=>'ti-alert-triangle'],
+      ['items'=>$clearUrgent,  'label'=>'Due This Week',  'border'=>'#f59e0b', 'bg'=>'#fffbeb', 'badge_bg'=>'#d97706', 'icon'=>'ti-clock-exclamation'],
+      ['items'=>$clearSoon,    'label'=>'Due in 3 Weeks', 'border'=>'#3b82f6', 'bg'=>'#eff6ff', 'badge_bg'=>'#2563eb', 'icon'=>'ti-calendar-event'],
+      ['items'=>$clearOk,      'label'=>'Upcoming',       'border'=>'#22c55e', 'bg'=>'#f0fdf4', 'badge_bg'=>'#16a34a', 'icon'=>'ti-calendar-check'],
+    ];
+    foreach ($clearGroups as $g):
+      if (!count($g['items'])) continue;
+    ?>
+    <div style="margin-bottom:4px">
+      <div style="font-size:10px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:flex;align-items:center;gap:5px">
+        <i class="ti <?= $g['icon'] ?>" style="font-size:12px;color:<?= $g['border'] ?>"></i>
+        <?= $g['label'] ?>
+      </div>
+      <?php foreach ($g['items'] as $c):
+        $days    = daysUntil($c['next_due_date']);
+        $dueText = $days < 0  ? abs($days).' day'.( abs($days)>1?'s':'').' overdue'
+                 : ($days === 0 ? 'Due today'
+                 : 'In '.$days.' day'.($days>1?'s':''));
+      ?>
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:<?= $g['bg'] ?>;border-left:3px solid <?= $g['border'] ?>;border-radius:0 8px 8px 0;margin-bottom:6px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;color:var(--green-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            <?= sanitize($c['plantation_name']) ?>
+          </div>
+          <div style="font-size:11px;color:var(--gray-500);margin-top:2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span><i class="ti ti-scissors" style="font-size:11px"></i> Last cleared <?= fmtDate($c['date_cleared']) ?></span>
+            <?php if ($c['units_to_clear']!==null && $c['units_to_clear']!==''): ?>
+            <span>· Last Time Units: <?= number_format((float)$c['units_to_clear'],2) ?></span>
+            <?php endif; ?>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:11px;font-weight:800;color:#fff;background:<?= $g['badge_bg'] ?>;padding:3px 10px;border-radius:20px;white-space:nowrap"><?= $dueText ?></div>
+          <div style="font-size:10px;color:var(--gray-400);margin-top:3px"><?= fmtDate($c['next_due_date']) ?></div>
+        </div>
+      </div>
+      <?php endforeach; ?>
+    </div>
+    <?php endforeach; ?>
+
+    </div>
+    <?php else: ?>
+      <div class="empty-state"><i class="ti ti-circle-check" style="color:var(--green-400)"></i><p>All clearing cycles are up to date</p></div>
+    <?php endif; ?>
+  </div>
+
 </div>
 
 <!-- ── SECTION COST + KG BY SECTION ────────────────── -->
