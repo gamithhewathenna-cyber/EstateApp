@@ -9,6 +9,7 @@ CREATE TABLE `clearing_cycles` (
   `estate_id` int(11) NOT NULL DEFAULT 1,
   `plantation_id` int(11) NOT NULL,
   `date_cleared` date NOT NULL,
+  `next_cycle_days` int(11) DEFAULT 30,
   `next_due_date` date DEFAULT NULL,
   `notes` text DEFAULT NULL,
   `created_by` int(11) DEFAULT NULL,

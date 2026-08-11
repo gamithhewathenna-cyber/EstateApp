@@ -12,18 +12,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // ── ADD ──────────────────────────────────────
     if ($action === 'add') {
-        $pid       = (int)($_POST['plantation_id'] ?? 0);
-        $date      = $_POST['date_cleared']         ?? today();
-        $cycleOpt  = $_POST['next_cycle_option']    ?? '30';
-        $customDue = $_POST['next_due_date_custom'] ?? '';
-        $notes     = trim($_POST['notes']           ?? '');
-        $uid       = Auth::user()['id'];
+        $pid     = (int)($_POST['plantation_id']  ?? 0);
+        $date    = $_POST['date_cleared']          ?? today();
+        $cycle   = (int)($_POST['next_cycle_days'] ?? 30);
+        $notes   = trim($_POST['notes']            ?? '');
+        $nextDue = date('Y-m-d', strtotime($date . ' + ' . $cycle . ' days'));
+        $uid     = Auth::user()['id'];
         if (!$pid || !$date) { flash('error','Section and date cleared are required.'); redirect('/clearing.php'); }
-        $due = ($cycleOpt === '__custom__')
-            ? ($customDue ?: null)
-            : date('Y-m-d', strtotime($date . ' + ' . (int)$cycleOpt . ' days'));
-        DB::insert("INSERT INTO clearing_cycles (estate_id,plantation_id,date_cleared,next_due_date,notes,created_by) VALUES (?,?,?,?,?,?)",
-            [$estateId,$pid,$date,$due,$notes,$uid]);
+        DB::insert("INSERT INTO clearing_cycles (estate_id,plantation_id,date_cleared,next_cycle_days,next_due_date,notes,created_by) VALUES (?,?,?,?,?,?,?)",
+            [$estateId,$pid,$date,$cycle,$nextDue,$notes,$uid]);
         flash('success','Clearing record saved.');
         redirect('/clearing.php');
     }
@@ -31,18 +28,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ── UPDATE ────────────────────────────────────
     if ($action === 'update') {
         Auth::requireAdmin();
-        $id        = (int)($_POST['id']             ?? 0);
-        $pid       = (int)($_POST['plantation_id']  ?? 0);
-        $date      = $_POST['date_cleared']          ?? today();
-        $cycleOpt  = $_POST['next_cycle_option']     ?? '30';
-        $customDue = $_POST['next_due_date_custom']  ?? '';
-        $notes     = trim($_POST['notes']            ?? '');
+        $id      = (int)($_POST['id']              ?? 0);
+        $pid     = (int)($_POST['plantation_id']   ?? 0);
+        $date    = $_POST['date_cleared']           ?? today();
+        $cycle   = (int)($_POST['next_cycle_days']  ?? 30);
+        $notes   = trim($_POST['notes']             ?? '');
+        $nextDue = date('Y-m-d', strtotime($date . ' + ' . $cycle . ' days'));
         if (!$pid || !$date || !$id) { flash('error','All required fields must be filled.'); redirect('/clearing.php?edit='.$id); }
-        $due = ($cycleOpt === '__custom__')
-            ? ($customDue ?: null)
-            : date('Y-m-d', strtotime($date . ' + ' . (int)$cycleOpt . ' days'));
-        DB::execute("UPDATE clearing_cycles SET plantation_id=?,date_cleared=?,next_due_date=?,notes=? WHERE id=? AND estate_id=?",
-            [$pid,$date,$due,$notes,$id,$estateId]);
+        DB::execute("UPDATE clearing_cycles SET plantation_id=?,date_cleared=?,next_cycle_days=?,next_due_date=?,notes=? WHERE id=? AND estate_id=?",
+            [$pid,$date,$cycle,$nextDue,$notes,$id,$estateId]);
         flash('success','Clearing record updated.');
         redirect('/clearing.php');
     }
@@ -71,18 +65,6 @@ $upcomingAll = DB::fetchAll("SELECT cc.*, p.name as plantation_name
 $history = DB::fetchAll("SELECT cc.*, p.name as plantation_name
     FROM clearing_cycles cc JOIN plantations p ON cc.plantation_id=p.id
     WHERE cc.estate_id=? ORDER BY cc.date_cleared DESC, cc.id DESC LIMIT 50", [$estateId]);
-
-// Preset clearing cycle lengths (days). If an edited record's gap doesn't
-// match one of these, fall back to showing it as a custom exact date.
-$cyclePresets = [30, 45, 60, 90];
-$editCycleOption = '30';
-if ($editRow) {
-    $editCycleOption = '__custom__';
-    if ($editRow['next_due_date'] && $editRow['date_cleared']) {
-        $diffDays = (int)round((strtotime($editRow['next_due_date']) - strtotime($editRow['date_cleared'])) / 86400);
-        if (in_array($diffDays, $cyclePresets, true)) $editCycleOption = (string)$diffDays;
-    }
-}
 
 require_once __DIR__ . '/includes/header.php';
 ?>
@@ -120,16 +102,11 @@ require_once __DIR__ . '/includes/header.php';
           </select>
         </div>
         <div class="form-group">
-          <label>Next Due Date</label>
-          <select name="next_cycle_option" id="edit-cycle-select" onchange="toggleEditCustomDue(this)">
-            <?php foreach ($cyclePresets as $d): ?>
-            <option value="<?= $d ?>" <?= $editCycleOption==(string)$d?'selected':'' ?>><?= $d ?> Days</option>
-            <?php endforeach; ?>
-            <option value="__custom__" <?= $editCycleOption==='__custom__'?'selected':'' ?>>Custom Date...</option>
-          </select>
-          <input type="date" name="next_due_date_custom" id="edit-due-custom-input"
-                 value="<?= $editRow['next_due_date'] ?>"
-                 style="<?= $editCycleOption==='__custom__'?'display:block':'display:none' ?>;margin-top:8px">
+          <label>Next Cycle (days)</label>
+          <input type="number" name="next_cycle_days" value="<?= $editRow['next_cycle_days'] ?: 30 ?>" min="1">
+          <div style="font-size:11px;color:var(--gray-400);margin-top:3px">
+            Next due will be recalculated automatically
+          </div>
         </div>
         <div class="form-group col-full">
           <label>Notes</label>
@@ -166,14 +143,8 @@ require_once __DIR__ . '/includes/header.php';
           </select>
         </div>
         <div class="form-group">
-          <label>Next Due Date</label>
-          <select name="next_cycle_option" id="cycle-select" onchange="toggleCustomDue(this)">
-            <?php foreach ($cyclePresets as $d): ?>
-            <option value="<?= $d ?>" <?= $d==30?'selected':'' ?>><?= $d ?> Days</option>
-            <?php endforeach; ?>
-            <option value="__custom__">Custom Date...</option>
-          </select>
-          <input type="date" name="next_due_date_custom" id="due-custom-input" style="display:none;margin-top:8px">
+          <label>Next Cycle (days)</label>
+          <input type="number" name="next_cycle_days" placeholder="30" value="30" min="1">
         </div>
         <div class="form-group col-full">
           <label>Notes</label>
@@ -281,24 +252,6 @@ require_once __DIR__ . '/includes/header.php';
 </div>
 
 <script>
-function toggleCustomDue(sel) {
-  var inp = document.getElementById('due-custom-input');
-  if (sel.value === '__custom__') {
-    inp.style.display = 'block'; inp.required = true; inp.focus();
-  } else {
-    inp.style.display = 'none'; inp.required = false; inp.value = '';
-  }
-}
-
-function toggleEditCustomDue(sel) {
-  var inp = document.getElementById('edit-due-custom-input');
-  if (sel.value === '__custom__') {
-    inp.style.display = 'block'; inp.required = true; inp.focus();
-  } else {
-    inp.style.display = 'none'; inp.required = false;
-  }
-}
-
 // Auto-scroll to edit form if editing
 <?php if ($editRow): ?>
 document.addEventListener('DOMContentLoaded', function() {
