@@ -188,7 +188,8 @@ require_once __DIR__ . '/includes/header.php';
       <div class="fert-dot" style="background:<?= $dotc ?>"></div>
       <div class="fert-info">
         <div class="fert-name"><?= sanitize($f['plantation_name']) ?></div>
-        <div class="fert-date">Last cleared: <?= fmtDate($f['date_cleared']) ?></div>
+        <div class="fert-date">Last cleared: <?= fmtDate($f['date_cleared']) ?>
+          <?= ($f['units_to_clear']!==null && $f['units_to_clear']!=='') ? ' · Last Time Units: '.number_format((float)$f['units_to_clear'],2) : '' ?></div>
       </div>
       <div class="fert-due <?= $cls ?>"><?= $f['next_due_date'] ? $lbl : 'No due date' ?></div>
     </div>
