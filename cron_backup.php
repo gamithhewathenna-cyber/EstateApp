@@ -14,7 +14,7 @@ $htaccess = $backupDir . '.htaccess';
 if (!file_exists($htaccess)) file_put_contents($htaccess, "Order Deny,Allow\nDeny from all\n");
 
 $tables = ['users','workers','plantations','work_types','daily_assignments',
-           'fertilizer_cycles','expenses','app_settings'];
+           'fertilizer_cycles','clearing_cycles','expenses','app_settings'];
 
 // Check if backup already exists for this month
 $autoFiles = glob($backupDir . 'backup_auto_*.sql') ?: [];

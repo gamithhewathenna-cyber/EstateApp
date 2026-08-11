@@ -11,6 +11,7 @@ $nav = [
     ['key'=>'expenses',    'label'=>'Expenses',            'icon'=>'ti-receipt',          'roles'=>['admin']],
     ['key'=>'production',  'label'=>'Tea Production',      'icon'=>'ti-plant-2',          'roles'=>['admin']],
     ['key'=>'fertilizer',  'label'=>'Fertilizer Cycles',   'icon'=>'ti-droplet',          'roles'=>['admin']],
+    ['key'=>'clearing',    'label'=>'Clearing Cycles',     'icon'=>'ti-scissors',         'roles'=>['admin']],
     ['key'=>'plantations', 'label'=>'Plantation Sections', 'icon'=>'ti-trees',            'roles'=>['admin']],
     ['key'=>'reports',        'label'=>'Reports',             'icon'=>'ti-chart-bar',        'roles'=>['admin']],
     ['key'=>'users',          'label'=>'User Management',     'icon'=>'ti-shield-lock',      'roles'=>['admin']],
@@ -41,6 +42,18 @@ $fertDue = DB::fetchOne("SELECT COUNT(*) as cnt FROM fertilizer_cycles fc
     ON fc.id = latest.max_id
     WHERE fc.estate_id=? AND fc.next_due_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)", [$activeEstateId, $activeEstateId]);
 $fertCount = $fertDue['cnt'] ?? 0;
+
+// Clearing due count for badge
+// Wrapped in try/catch: this runs on every page via header.php, so if the
+// clearing_cycles migration hasn't been applied yet, the whole site must
+// keep working (just without the badge) rather than 500 everywhere.
+try {
+    $clearDue = DB::fetchOne("SELECT COUNT(*) as cnt FROM clearing_cycles cc
+        JOIN (SELECT plantation_id, MAX(id) as max_id FROM clearing_cycles WHERE estate_id=? GROUP BY plantation_id) latest
+        ON cc.id = latest.max_id
+        WHERE cc.estate_id=? AND cc.next_due_date IS NOT NULL AND cc.next_due_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)", [$activeEstateId, $activeEstateId]);
+    $clearCount = $clearDue['cnt'] ?? 0;
+} catch (Exception $e) { $clearCount = 0; }
 
 // Use estate-specific settings (already loaded above)
 // Also check estate table for per-estate logo/name override
@@ -116,6 +129,9 @@ $_themeAccent   = $appSettings['theme_accent']   ?? '#4CAF50';
           <span><?= $item['label'] ?></span>
           <?php if($item['key']==='fertilizer' && $fertCount>0): ?>
             <span class="nav-badge"><?= $fertCount ?></span>
+          <?php endif; ?>
+          <?php if($item['key']==='clearing' && $clearCount>0): ?>
+            <span class="nav-badge"><?= $clearCount ?></span>
           <?php endif; ?>
         </a>
         <?php if($item['key']==='workers'): ?><div class="nav-section">Finance</div><?php endif; ?>

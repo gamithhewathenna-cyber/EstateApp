@@ -109,6 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         DB::execute("DELETE FROM workers            WHERE estate_id=?", [$id]);
         DB::execute("DELETE FROM plantations        WHERE estate_id=?", [$id]);
         DB::execute("DELETE FROM fertilizer_cycles  WHERE estate_id=?", [$id]);
+        DB::execute("DELETE FROM clearing_cycles    WHERE estate_id=?", [$id]);
         DB::execute("DELETE FROM expenses           WHERE estate_id=?", [$id]);
         DB::execute("DELETE FROM work_types         WHERE estate_id=?", [$id]);
         DB::execute("DELETE FROM app_settings       WHERE estate_id=?", [$id]);

@@ -18,7 +18,7 @@ if (!file_exists($htaccess)) {
 
 // Tables to backup
 $tables = ['users','workers','plantations','work_types','daily_assignments',
-           'fertilizer_cycles','expenses','app_settings'];
+           'fertilizer_cycles','clearing_cycles','expenses','app_settings'];
 
 // ── GENERATE SQL DUMP ──────────────────────────────────────────
 function generateSQLDump($tables, $label = '') {
