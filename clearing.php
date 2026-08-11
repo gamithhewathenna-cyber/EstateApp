@@ -15,12 +15,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pid     = (int)($_POST['plantation_id']  ?? 0);
         $date    = $_POST['date_cleared']          ?? today();
         $cycle   = (int)($_POST['next_cycle_days'] ?? 30);
+        $units   = trim($_POST['units_to_clear']   ?? '');
         $notes   = trim($_POST['notes']            ?? '');
         $nextDue = date('Y-m-d', strtotime($date . ' + ' . $cycle . ' days'));
         $uid     = Auth::user()['id'];
         if (!$pid || !$date) { flash('error','Section and date cleared are required.'); redirect('/clearing.php'); }
-        DB::insert("INSERT INTO clearing_cycles (estate_id,plantation_id,date_cleared,next_cycle_days,next_due_date,notes,created_by) VALUES (?,?,?,?,?,?,?)",
-            [$estateId,$pid,$date,$cycle,$nextDue,$notes,$uid]);
+        DB::insert("INSERT INTO clearing_cycles (estate_id,plantation_id,date_cleared,next_cycle_days,next_due_date,units_to_clear,notes,created_by) VALUES (?,?,?,?,?,?,?,?)",
+            [$estateId,$pid,$date,$cycle,$nextDue,$units!==''?$units:null,$notes,$uid]);
         flash('success','Clearing record saved.');
         redirect('/clearing.php');
     }
@@ -32,11 +33,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pid     = (int)($_POST['plantation_id']   ?? 0);
         $date    = $_POST['date_cleared']           ?? today();
         $cycle   = (int)($_POST['next_cycle_days']  ?? 30);
+        $units   = trim($_POST['units_to_clear']    ?? '');
         $notes   = trim($_POST['notes']             ?? '');
         $nextDue = date('Y-m-d', strtotime($date . ' + ' . $cycle . ' days'));
         if (!$pid || !$date || !$id) { flash('error','All required fields must be filled.'); redirect('/clearing.php?edit='.$id); }
-        DB::execute("UPDATE clearing_cycles SET plantation_id=?,date_cleared=?,next_cycle_days=?,next_due_date=?,notes=? WHERE id=? AND estate_id=?",
-            [$pid,$date,$cycle,$nextDue,$notes,$id,$estateId]);
+        DB::execute("UPDATE clearing_cycles SET plantation_id=?,date_cleared=?,next_cycle_days=?,next_due_date=?,units_to_clear=?,notes=? WHERE id=? AND estate_id=?",
+            [$pid,$date,$cycle,$nextDue,$units!==''?$units:null,$notes,$id,$estateId]);
         flash('success','Clearing record updated.');
         redirect('/clearing.php');
     }
@@ -108,6 +110,13 @@ require_once __DIR__ . '/includes/header.php';
             Next due will be recalculated automatically
           </div>
         </div>
+        <div class="form-group">
+          <label>Units to Clear</label>
+          <input type="number" name="units_to_clear" value="<?= sanitize($editRow['units_to_clear'] ?? '') ?>" min="0" step="0.01" placeholder="e.g. 5">
+          <div style="font-size:11px;color:var(--gray-400);margin-top:3px">
+            Entered manually — not pulled from the section's own unit/area data
+          </div>
+        </div>
         <div class="form-group col-full">
           <label>Notes</label>
           <textarea name="notes"><?= sanitize($editRow['notes'] ?? '') ?></textarea>
@@ -145,6 +154,10 @@ require_once __DIR__ . '/includes/header.php';
         <div class="form-group">
           <label>Next Cycle (days)</label>
           <input type="number" name="next_cycle_days" placeholder="30" value="30" min="1">
+        </div>
+        <div class="form-group">
+          <label>Units to Clear</label>
+          <input type="number" name="units_to_clear" placeholder="e.g. 5" min="0" step="0.01">
         </div>
         <div class="form-group col-full">
           <label>Notes</label>
@@ -196,6 +209,7 @@ require_once __DIR__ . '/includes/header.php';
           <tr>
             <th>Date Cleared</th>
             <th>Section</th>
+            <th>Units</th>
             <th>Next Due</th>
             <?php if (Auth::isAdmin()): ?><th></th><?php endif; ?>
           </tr>
@@ -205,6 +219,7 @@ require_once __DIR__ . '/includes/header.php';
           <tr style="<?= $isEditing?'background:var(--amber-50)':'' ?>">
             <td><?= fmtDate($h['date_cleared']) ?></td>
             <td><?= sanitize($h['plantation_name']) ?></td>
+            <td><?= ($h['units_to_clear']!==null && $h['units_to_clear']!=='') ? number_format((float)$h['units_to_clear'],2) : '—' ?></td>
             <td>
               <?php if ($h['next_due_date']):
                 $d = daysUntil($h['next_due_date']);
@@ -240,7 +255,7 @@ require_once __DIR__ . '/includes/header.php';
           </tr>
           <?php endforeach; ?>
           <?php if (!$history): ?>
-          <tr><td colspan="4">
+          <tr><td colspan="5">
             <div class="empty-state"><i class="ti ti-scissors"></i><p>No records yet</p></div>
           </td></tr>
           <?php endif; ?>

@@ -11,6 +11,7 @@ CREATE TABLE `clearing_cycles` (
   `date_cleared` date NOT NULL,
   `next_cycle_days` int(11) DEFAULT 30,
   `next_due_date` date DEFAULT NULL,
+  `units_to_clear` decimal(10,2) DEFAULT NULL,
   `notes` text DEFAULT NULL,
   `created_by` int(11) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
