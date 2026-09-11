@@ -143,7 +143,10 @@ html, body {
   background: #0a1f07;
   font-family: 'Inter', system-ui, sans-serif;
   color: var(--text);
+  animation: fadeInPage .3s ease;
 }
+@keyframes fadeInPage { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { html, body { animation: none; } }
 
 /* Animated gradient background */
 body::before {
