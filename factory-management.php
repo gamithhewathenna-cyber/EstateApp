@@ -455,9 +455,6 @@ require_once __DIR__ . '/includes/header.php';
     <a href="#overview"   class="fm-tab <?= $activeTab === 'overview' ? 'active' : '' ?>" onclick="return fmShowTab('overview',this)">
       <i class="ti ti-layout-dashboard"></i><span> Overview</span>
     </a>
-    <a href="#factories"  class="fm-tab <?= $activeTab === 'factories' ? 'active' : '' ?>" onclick="return fmShowTab('factories',this)">
-      <i class="ti ti-building-factory-2"></i><span> Factories</span>
-    </a>
     <a href="#deliveries" class="fm-tab <?= $activeTab === 'deliveries' ? 'active' : '' ?>" onclick="return fmShowTab('deliveries',this)">
       <i class="ti ti-truck-delivery"></i><span> Deliveries</span>
     </a>
@@ -466,6 +463,9 @@ require_once __DIR__ . '/includes/header.php';
     </a>
     <a href="#prices"     class="fm-tab <?= $activeTab === 'prices' ? 'active' : '' ?>" onclick="return fmShowTab('prices',this)">
       <i class="ti ti-tag"></i><span> Monthly Prices</span>
+    </a>
+    <a href="#factories"  class="fm-tab <?= $activeTab === 'factories' ? 'active' : '' ?>" onclick="return fmShowTab('factories',this)">
+      <i class="ti ti-building-factory-2"></i><span> Factories</span>
     </a>
   </div>
 
