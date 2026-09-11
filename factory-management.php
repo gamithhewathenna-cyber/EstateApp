@@ -94,6 +94,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Months as [value=>'YYYY-MM', label=>'September 2026'], newest first.
+// Used instead of <input type="month"> because that input type isn't
+// reliably supported across browsers (notably older Firefox falls back
+// to a plain text box with no calendar, making past months unpickable).
+function fmMonthOptions($monthsBack = 12, $monthsForward = 0) {
+    $opts = [];
+    $base = strtotime(date('Y-m-01'));
+    for ($i = -$monthsForward; $i <= $monthsBack; $i++) {
+        $ts = strtotime(sprintf('%+d month', -$i), $base);
+        $opts[date('Y-m', $ts)] = date('F Y', $ts);
+    }
+    return $opts;
+}
+
 // ── Check the migration has been applied before querying ──────
 $factoriesReady = true;
 try {
@@ -538,7 +552,12 @@ require_once __DIR__ . '/includes/header.php';
       </div>
       <div class="form-group" style="margin-bottom:0">
         <label>Month</label>
-        <input type="month" name="month" value="<?= sanitize($filterDate ? '' : $filterMonth) ?>">
+        <?php $monthOpts = fmMonthOptions(12); if (!isset($monthOpts[$filterMonth])) $monthOpts[$filterMonth] = date('F Y', strtotime($filterMonth . '-01')); ?>
+        <select name="month">
+          <?php foreach ($monthOpts as $mVal => $mLabel): ?>
+          <option value="<?= $mVal ?>" <?= (!$filterDate && $filterMonth === $mVal) ? 'selected' : '' ?>><?= $mLabel ?></option>
+          <?php endforeach; ?>
+        </select>
       </div>
       <div class="form-group" style="margin-bottom:0">
         <label>Specific Date (optional)</label>
@@ -626,7 +645,12 @@ require_once __DIR__ . '/includes/header.php';
     <form method="GET" action="factory-management.php#prices" style="display:flex;gap:12px;align-items:flex-end">
       <div class="form-group" style="margin-bottom:0">
         <label>Month</label>
-        <input type="month" name="pmonth" value="<?= sanitize($priceMonthSel) ?>">
+        <?php $priceMonthOpts = fmMonthOptions(12, 2); if (!isset($priceMonthOpts[$priceMonthSel])) $priceMonthOpts[$priceMonthSel] = date('F Y', strtotime($priceMonthSel . '-01')); ?>
+        <select name="pmonth">
+          <?php foreach ($priceMonthOpts as $mVal => $mLabel): ?>
+          <option value="<?= $mVal ?>" <?= $priceMonthSel === $mVal ? 'selected' : '' ?>><?= $mLabel ?></option>
+          <?php endforeach; ?>
+        </select>
       </div>
       <button type="submit" class="btn btn-primary"><i class="ti ti-filter"></i> Load Month</button>
     </form>
