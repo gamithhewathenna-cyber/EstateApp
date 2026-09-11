@@ -88,13 +88,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $factoryId    = (int)($_POST['factory_id'] ?? 0) ?: null;
         $weight       = trim($_POST['factory_weight'] ?? '');
         $weight       = ($weight === '') ? null : (float)$weight;
-        if (!$deliveryDate) { flash('error', 'Missing delivery date.'); redirect('/factory-management.php#deliveries'); }
+
+        // Preserve whatever Factory/Month/Date filter was active so saving
+        // a row doesn't bounce the page back to the current month.
+        $backTo = '/factory-management.php?' . http_build_query(array_filter([
+            'factory' => $_POST['ret_factory'] ?? '',
+            'month'   => $_POST['ret_month']   ?? '',
+            'fdate'   => $_POST['ret_fdate']   ?? '',
+        ], fn($v) => $v !== '')) . '#deliveries';
+
+        if (!$deliveryDate) { flash('error', 'Missing delivery date.'); redirect($backTo); }
         DB::execute("INSERT INTO factory_deliveries (estate_id, delivery_date, factory_id, factory_weight, created_by)
             VALUES (?,?,?,?,?)
             ON DUPLICATE KEY UPDATE factory_id=VALUES(factory_id), factory_weight=VALUES(factory_weight), updated_at=NOW()",
             [$estateId, $deliveryDate, $factoryId, $weight, $uid]);
         flash('success', 'Delivery updated.');
-        redirect('/factory-management.php#deliveries');
+        redirect($backTo);
     }
 }
 
@@ -667,6 +676,9 @@ require_once __DIR__ . '/includes/header.php';
               <form method="POST" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
                 <input type="hidden" name="action" value="update_delivery">
                 <input type="hidden" name="delivery_date" value="<?= $d['assignment_date'] ?>">
+                <input type="hidden" name="ret_factory" value="<?= sanitize($filterFactory) ?>">
+                <input type="hidden" name="ret_month" value="<?= sanitize($filterMonth) ?>">
+                <input type="hidden" name="ret_fdate" value="<?= sanitize($filterDate) ?>">
                 <select name="factory_id" style="font-size:12px;padding:5px 8px;border:1px solid #d8ddd5;border-radius:6px">
                   <option value="">— Unassigned —</option>
                   <?php foreach ($factories as $f): ?>
