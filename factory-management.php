@@ -43,18 +43,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('/factory-management.php#factories');
     }
 
-    // ── FACTORY: delete (only if never used in a delivery) ──
+    // ── FACTORY: delete (only if never used in a delivery or expense) ──
     if ($action === 'delete_factory') {
         $id   = (int)($_POST['id'] ?? 0);
         $used = DB::fetchOne("SELECT COUNT(*) as cnt FROM factory_deliveries WHERE factory_id=? AND estate_id=?", [$id, $estateId]);
-        if (($used['cnt'] ?? 0) > 0) {
-            flash('error', 'Cannot delete — this factory has ' . $used['cnt'] . ' delivery record(s). Deactivate it instead.');
+        $usedExp = DB::fetchOne("SELECT COUNT(*) as cnt FROM factory_expenses WHERE factory_id=? AND estate_id=?", [$id, $estateId]);
+        if ((($used['cnt'] ?? 0) + ($usedExp['cnt'] ?? 0)) > 0) {
+            flash('error', 'Cannot delete — this factory has delivery or expense record(s). Deactivate it instead.');
             redirect('/factory-management.php#factories');
         }
         DB::execute("DELETE FROM factory_prices WHERE factory_id=? AND estate_id=?", [$id, $estateId]);
         DB::execute("DELETE FROM factories WHERE id=? AND estate_id=?", [$id, $estateId]);
         flash('success', 'Factory deleted.');
         redirect('/factory-management.php#factories');
+    }
+
+    // ── FACTORY EXPENSE: add / edit ────────────────
+    if ($action === 'add_expense' || $action === 'edit_expense') {
+        $factoryId       = (int)($_POST['factory_id'] ?? 0);
+        $expMonthYear    = trim($_POST['expense_month_year'] ?? date('Y'));
+        $expMonthNum     = trim($_POST['expense_month_num']  ?? date('m'));
+        $expenseDate     = $_POST['expense_date'] ?? today();
+        $category        = trim($_POST['category'] ?? 'Miscellaneous');
+        $description     = trim($_POST['description'] ?? '');
+        $amount          = (float)($_POST['amount'] ?? 0);
+        $notes           = trim($_POST['notes'] ?? '');
+        $retYear         = $_POST['ret_year']     ?? date('Y');
+        $retMonthNum     = $_POST['ret_monthnum'] ?? date('m');
+        $backTo          = '/factory-management.php?year=' . urlencode($retYear) . '&monthnum=' . urlencode($retMonthNum) . '#expenses';
+
+        if (!$factoryId || !$expMonthYear || !$expMonthNum || $amount <= 0) {
+            flash('error', 'Factory, month and a valid amount are required.');
+            redirect($backTo);
+        }
+        $expenseMonthDate = $expMonthYear . '-' . str_pad($expMonthNum, 2, '0', STR_PAD_LEFT) . '-01';
+
+        if ($action === 'add_expense') {
+            DB::insert("INSERT INTO factory_expenses (estate_id,factory_id,expense_month,expense_date,category,description,amount,notes,created_by)
+                VALUES (?,?,?,?,?,?,?,?,?)",
+                [$estateId, $factoryId, $expenseMonthDate, $expenseDate, $category, $description, $amount, $notes, $uid]);
+            flash('success', 'Factory expense added.');
+        } else {
+            $id = (int)($_POST['id'] ?? 0);
+            DB::execute("UPDATE factory_expenses SET factory_id=?,expense_month=?,expense_date=?,category=?,description=?,amount=?,notes=?,updated_at=NOW() WHERE id=? AND estate_id=?",
+                [$factoryId, $expenseMonthDate, $expenseDate, $category, $description, $amount, $notes, $id, $estateId]);
+            flash('success', 'Factory expense updated.');
+        }
+        redirect($backTo);
+    }
+
+    // ── FACTORY EXPENSE: delete ─────────────────────
+    if ($action === 'delete_expense') {
+        $retYear     = $_POST['ret_year']     ?? date('Y');
+        $retMonthNum = $_POST['ret_monthnum'] ?? date('m');
+        $backTo      = '/factory-management.php?year=' . urlencode($retYear) . '&monthnum=' . urlencode($retMonthNum) . '#expenses';
+        DB::execute("DELETE FROM factory_expenses WHERE id=? AND estate_id=?", [(int)($_POST['id'] ?? 0), $estateId]);
+        flash('success', 'Factory expense removed.');
+        redirect($backTo);
     }
 
     // ── MONTHLY PRICE: save (upsert per factory + month) ──
@@ -125,14 +170,18 @@ $fmMonthNames = [
     '09' => 'September','10' => 'October',  '11' => 'November',  '12' => 'December',
 ];
 
-// ── Check both migrations have been applied before querying ────
+// ── Check all migrations have been applied before querying ────
 $factoriesReady = true;
 try {
     DB::fetchOne("SELECT 1 FROM factories LIMIT 1", []);
     DB::fetchOne("SELECT 1 FROM factory_deliveries LIMIT 1", []);
+    DB::fetchOne("SELECT 1 FROM factory_expenses LIMIT 1", []);
 } catch (Exception $e) {
     $factoriesReady = false;
 }
+
+// Preset expense categories (Other allows free text via the description field)
+$fmExpenseCategories = ['Fertilizer', 'Chemicals', 'Transport', 'Repairs & Maintenance', 'Equipment', 'Labour', 'Miscellaneous'];
 
 if ($factoriesReady) {
     $editFactory = null;
@@ -194,6 +243,9 @@ if ($factoriesReady) {
     $ovTotalValue      = array_sum(array_column($factoryMonthMap, 'value'));
     $ovDeliveries      = count(array_filter($thisMonthDaily, fn($r) => !empty($r['factory_id'])));
     $ovActiveFactories = count(array_filter($factories, fn($f) => $f['is_active'] == 1));
+    $ovTotalExpenses   = (float)(DB::fetchOne("SELECT COALESCE(SUM(amount),0) as total FROM factory_expenses WHERE estate_id=? AND expense_month=?",
+        [$estateId, $filterMonthStart])['total'] ?? 0);
+    $ovNetProfit       = $ovTotalValue - $ovTotalExpenses;
 
     // Daily factory-weight trend this month (for the mini chart), oldest first
     $dailyFactoryKg = [];
@@ -257,6 +309,25 @@ if ($factoriesReady) {
         return (float)$d['factory_weight'] * (float)$d['price_per_kg'];
     }, $deliveries));
 
+    // ── FACTORY EXPENSES TAB: uses the shared Year/Month + Factory filter ──
+    $editExpense = null;
+    if (!empty($_GET['edit_expense'])) {
+        $editExpense = DB::fetchOne("SELECT * FROM factory_expenses WHERE id=? AND estate_id=?", [(int)$_GET['edit_expense'], $estateId]);
+    }
+
+    $expWhere  = "fe.estate_id=? AND fe.expense_month=?";
+    $expParams = [$estateId, $filterMonthStart];
+    if ($filterFactory !== 'all' && $filterFactory !== 'none' && (int)$filterFactory > 0) {
+        $expWhere   .= " AND fe.factory_id=?";
+        $expParams[] = (int)$filterFactory;
+    }
+    $factoryExpenses = DB::fetchAll("SELECT fe.*, f.name as factory_name
+        FROM factory_expenses fe
+        JOIN factories f ON fe.factory_id=f.id
+        WHERE $expWhere
+        ORDER BY fe.expense_date DESC, fe.id DESC", $expParams);
+    $expTotal = array_sum(array_column($factoryExpenses, 'amount'));
+
     // ── MONTHLY PRICES TAB ──
     $priceYear      = $_GET['pyear']  ?? date('Y');
     $priceMonthNum  = $_GET['pmonthnum'] ?? date('m');
@@ -278,8 +349,9 @@ require_once __DIR__ . '/includes/header.php';
   <div class="card-title" style="color:var(--red-600)"><i class="ti ti-alert-triangle"></i> Setup Required</div>
   <p style="font-size:13px;color:var(--red-600);margin-top:8px">
     The Factory Management database tables haven't been created yet. Ask your administrator to run
-    <code style="background:#fff;padding:2px 6px;border-radius:4px">install/migration_factory_management.sql</code>
-    and <code style="background:#fff;padding:2px 6px;border-radius:4px">install/migration_factory_deliveries_daily.sql</code>
+    <code style="background:#fff;padding:2px 6px;border-radius:4px">install/migration_factory_management.sql</code>,
+    <code style="background:#fff;padding:2px 6px;border-radius:4px">install/migration_factory_deliveries_daily.sql</code>
+    and <code style="background:#fff;padding:2px 6px;border-radius:4px">install/migration_factory_expenses.sql</code>
     against the database (e.g. via phpMyAdmin), then reload this page.
   </p>
 </div>
@@ -363,16 +435,19 @@ require_once __DIR__ . '/includes/header.php';
     <a href="#deliveries" class="fm-tab" onclick="return fmShowTab('deliveries',this)">
       <i class="ti ti-truck-delivery"></i><span> Deliveries</span>
     </a>
+    <a href="#expenses"   class="fm-tab" onclick="return fmShowTab('expenses',this)">
+      <i class="ti ti-receipt-2"></i><span> Factory Expenses</span>
+    </a>
     <a href="#prices"     class="fm-tab" onclick="return fmShowTab('prices',this)">
       <i class="ti ti-tag"></i><span> Monthly Prices</span>
     </a>
   </div>
 
-  <!-- Year/Month filter — always visible in the header (drives Overview + Deliveries), Factory narrows Deliveries only -->
+  <!-- Year/Month filter — always visible in the header (drives Overview + Deliveries + Expenses), Factory narrows Deliveries/Expenses only -->
   <div class="fm-filter-bar">
     <form method="GET" id="fm-filter-form" action="factory-management.php#overview" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
       <div class="form-group" style="min-width:180px">
-        <label>Factory <span style="font-weight:400;color:var(--gray-400)">(Deliveries only)</span></label>
+        <label>Factory <span style="font-weight:400;color:var(--gray-400)">(Deliveries &amp; Expenses)</span></label>
         <select name="factory">
           <option value="all" <?= $filterFactory === 'all' ? 'selected' : '' ?>>All Factories</option>
           <option value="none" <?= $filterFactory === 'none' ? 'selected' : '' ?>>Unassigned</option>
@@ -423,6 +498,36 @@ require_once __DIR__ . '/includes/header.php';
     <div class="stat-card">
       <div class="stat-label"><i class="ti ti-building-factory-2"></i> Active Factories</div>
       <div class="stat-value"><?= $ovActiveFactories ?> <span style="font-size:12px;color:var(--gray-400);font-weight:500">/ <?= count($factories) ?></span></div>
+    </div>
+  </div>
+
+  <!-- Factory Profit Summary: Value − Expenses = Net Profit for the selected month -->
+  <div class="card" style="margin-bottom:20px;border-left:4px solid var(--green-400)">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <i class="ti ti-calculator" style="color:var(--green-600);font-size:18px"></i>
+      <span style="font-size:14px;font-weight:700;color:var(--green-900)">Factory Profit Summary</span>
+      <span style="font-size:12px;color:var(--gray-400);margin-left:4px"><?= $filterMonthLabel ?></span>
+      <a href="#expenses" class="card-action" style="margin-left:auto" onclick="return fmShowTab('expenses')">Manage Expenses</a>
+    </div>
+    <div class="period-cost-grid">
+      <div style="background:var(--green-50);border-radius:var(--radius-md);padding:14px 16px">
+        <div style="font-size:11px;font-weight:700;color:var(--green-600);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">
+          <i class="ti ti-coin"></i> Factory Value
+        </div>
+        <div style="font-size:20px;font-weight:700;color:var(--green-800)"><?= money($ovTotalValue) ?></div>
+      </div>
+      <div style="background:var(--amber-50);border-radius:var(--radius-md);padding:14px 16px">
+        <div style="font-size:11px;font-weight:700;color:var(--amber-600);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">
+          <i class="ti ti-receipt-2"></i> Factory Expenses
+        </div>
+        <div style="font-size:20px;font-weight:700;color:var(--amber-600)"><?= money($ovTotalExpenses) ?></div>
+      </div>
+      <div style="background:<?= $ovNetProfit >= 0 ? 'var(--green-50)' : 'var(--red-50)' ?>;border-radius:var(--radius-md);padding:14px 16px;<?= $ovNetProfit < 0 ? 'border:1px solid #fca5a5' : '' ?>">
+        <div style="font-size:11px;font-weight:700;color:<?= $ovNetProfit >= 0 ? 'var(--green-600)' : 'var(--red-600)' ?>;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">
+          <i class="ti ti-sum"></i> Net Profit
+        </div>
+        <div style="font-size:20px;font-weight:700;color:<?= $ovNetProfit >= 0 ? 'var(--green-800)' : 'var(--red-600)' ?>"><?= money($ovNetProfit) ?></div>
+      </div>
     </div>
   </div>
 
@@ -715,6 +820,139 @@ require_once __DIR__ . '/includes/header.php';
   </div>
 </div>
 
+<!-- ══════════════════════ FACTORY EXPENSES ══════════════════════ -->
+<div class="fm-panel" id="expenses" hidden>
+
+  <div class="form-panel" style="margin-bottom:20px;<?= $editExpense ? 'border:2px solid var(--amber-200)' : '' ?>">
+    <div class="form-panel-title" style="<?= $editExpense ? 'color:var(--amber-600)' : '' ?>">
+      <i class="ti ti-<?= $editExpense ? 'edit' : 'receipt-2' ?>"></i>
+      <?= $editExpense ? 'Edit Factory Expense' : 'Add Factory Expense' ?>
+    </div>
+    <form method="POST">
+      <input type="hidden" name="action" value="<?= $editExpense ? 'edit_expense' : 'add_expense' ?>">
+      <?php if ($editExpense): ?><input type="hidden" name="id" value="<?= $editExpense['id'] ?>"><?php endif; ?>
+      <input type="hidden" name="ret_year" value="<?= sanitize($filterYear) ?>">
+      <input type="hidden" name="ret_monthnum" value="<?= sanitize($filterMonthNum) ?>">
+      <?php
+        $expDefYear  = $editExpense ? date('Y', strtotime($editExpense['expense_month'])) : $filterYear;
+        $expDefMNum  = $editExpense ? date('m', strtotime($editExpense['expense_month'])) : $filterMonthNum;
+        $expYearOpts = fmYearOptions(5, 1);
+        if (!in_array((int)$expDefYear, $expYearOpts)) $expYearOpts[] = (int)$expDefYear;
+      ?>
+      <div class="grid-form" style="margin-bottom:16px">
+        <div class="form-group">
+          <label>Factory *</label>
+          <select name="factory_id" required>
+            <option value="">— Select —</option>
+            <?php foreach ($factories as $f): ?>
+            <option value="<?= $f['id'] ?>" <?= ($editExpense && (int)$editExpense['factory_id'] === (int)$f['id']) ? 'selected' : '' ?>><?= sanitize($f['name']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Month &amp; Year *</label>
+          <div style="display:flex;gap:8px">
+            <select name="expense_month_year" style="flex:1">
+              <?php foreach ($expYearOpts as $y): ?>
+              <option value="<?= $y ?>" <?= (int)$expDefYear === $y ? 'selected' : '' ?>><?= $y ?></option>
+              <?php endforeach; ?>
+            </select>
+            <select name="expense_month_num" style="flex:1.4">
+              <?php foreach ($fmMonthNames as $mNum => $mLabel): ?>
+              <option value="<?= $mNum ?>" <?= $expDefMNum === $mNum ? 'selected' : '' ?>><?= $mLabel ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Expense Type / Category *</label>
+          <select name="category" required>
+            <?php foreach ($fmExpenseCategories as $cat): ?>
+            <option value="<?= sanitize($cat) ?>" <?= ($editExpense && $editExpense['category'] === $cat) ? 'selected' : '' ?>><?= sanitize($cat) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Date *</label>
+          <input type="date" name="expense_date" value="<?= sanitize($editExpense['expense_date'] ?? today()) ?>" required>
+        </div>
+        <div class="form-group">
+          <label>Amount (LKR) *</label>
+          <input type="number" name="amount" min="0" step="0.01" required placeholder="e.g. 15000"
+                 value="<?= $editExpense ? $editExpense['amount'] : '' ?>">
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <input type="text" name="description" placeholder="e.g. Fertilizer supplied by factory"
+                 value="<?= sanitize($editExpense['description'] ?? '') ?>">
+        </div>
+        <div class="form-group col-full">
+          <label>Notes</label>
+          <textarea name="notes" placeholder="Any additional notes..."><?= sanitize($editExpense['notes'] ?? '') ?></textarea>
+        </div>
+      </div>
+      <div class="btn-group">
+        <button type="submit" class="btn btn-primary"><i class="ti ti-check"></i> <?= $editExpense ? 'Update Expense' : 'Save Expense' ?></button>
+        <?php if ($editExpense): ?><a href="factory-management.php?year=<?= sanitize($filterYear) ?>&monthnum=<?= sanitize($filterMonthNum) ?>#expenses" class="btn btn-secondary">Cancel</a><?php endif; ?>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="ti ti-receipt-2"></i> Factory Expenses — <?= $filterMonthLabel ?></div>
+      <span style="font-size:12px;color:var(--gray-400)"><?= count($factoryExpenses) ?> record(s)</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th><th>Factory</th><th>Category</th><th>Description</th>
+            <th style="text-align:right">Amount (LKR)</th><th>Notes</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($factoryExpenses as $ex): $isEditing = $editExpense && (int)$editExpense['id'] === (int)$ex['id']; ?>
+          <tr style="<?= $isEditing ? 'background:var(--amber-50)' : '' ?>">
+            <td><?= fmtDate($ex['expense_date']) ?></td>
+            <td><?= sanitize($ex['factory_name']) ?></td>
+            <td><?= sanitize($ex['category']) ?></td>
+            <td><?= sanitize($ex['description']) ?: '—' ?></td>
+            <td style="text-align:right;font-weight:700"><?= money($ex['amount']) ?></td>
+            <td style="font-size:12px;color:var(--gray-500)"><?= sanitize($ex['notes']) ?: '—' ?></td>
+            <td>
+              <div style="display:flex;gap:4px;justify-content:flex-end">
+                <a href="factory-management.php?year=<?= sanitize($filterYear) ?>&monthnum=<?= sanitize($filterMonthNum) ?>&edit_expense=<?= $ex['id'] ?>#expenses"
+                   class="btn btn-outline btn-sm" title="Edit"><i class="ti ti-edit"></i></a>
+                <form method="POST" style="display:inline" onsubmit="return confirm('Delete this expense record?')">
+                  <input type="hidden" name="action" value="delete_expense">
+                  <input type="hidden" name="id" value="<?= $ex['id'] ?>">
+                  <input type="hidden" name="ret_year" value="<?= sanitize($filterYear) ?>">
+                  <input type="hidden" name="ret_monthnum" value="<?= sanitize($filterMonthNum) ?>">
+                  <button type="submit" class="btn btn-outline btn-sm" style="color:var(--red-400)" title="Delete"><i class="ti ti-trash"></i></button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          <?php endforeach; ?>
+          <?php if (!$factoryExpenses): ?>
+          <tr><td colspan="7"><div class="empty-state"><i class="ti ti-receipt-2"></i><p>No factory expenses recorded for this month</p></div></td></tr>
+          <?php endif; ?>
+        </tbody>
+        <?php if ($factoryExpenses): ?>
+        <tfoot>
+          <tr>
+            <td colspan="4" style="text-align:right;font-weight:700;color:var(--green-900)">Total Factory Expenses</td>
+            <td style="text-align:right;font-weight:700;color:var(--amber-600)"><?= money($expTotal) ?></td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+        <?php endif; ?>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════════════════ MONTHLY PRICES ══════════════════════ -->
 <div class="fm-panel" id="prices" hidden>
 
@@ -814,7 +1052,7 @@ function fmShowTab(id, el) {
   return false;
 }
 (function() {
-  var tabs = ['overview', 'factories', 'deliveries', 'prices'];
+  var tabs = ['overview', 'factories', 'deliveries', 'expenses', 'prices'];
   var id = window.location.hash ? window.location.hash.slice(1) : '';
   if (tabs.indexOf(id) === -1) id = 'overview';
   fmShowTab(id);
