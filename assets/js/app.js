@@ -41,3 +41,30 @@ function closeModal(id) {
   var el = document.getElementById(id);
   if (el) el.classList.remove('open');
 }
+
+// Estate switcher dropdown (topbar) — see .estate-switch in app.css
+function toggleEstateDropdown(e) {
+  e.stopPropagation();
+  var el = document.getElementById('estate-switch');
+  if (el) el.classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+  var el = document.getElementById('estate-switch');
+  if (el && el.classList.contains('open') && !el.contains(e.target)) el.classList.remove('open');
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    var el = document.getElementById('estate-switch');
+    if (el) el.classList.remove('open');
+  }
+});
+
+// Smooth switch: fade the page out before the form's POST navigates away,
+// so the estate change doesn't feel like an abrupt jump.
+function fmSwitchEstate(form) {
+  var btn = form.querySelector('button[type=submit]');
+  if (btn) { btn.style.opacity = '0.6'; btn.style.pointerEvents = 'none'; btn.innerHTML += ' <i class="ti ti-loader-2" style="animation:spin .6s linear infinite"></i>'; }
+  var content = document.querySelector('.content');
+  if (content) { content.style.transition = 'opacity .25s ease'; content.style.opacity = '0'; }
+  return true;
+}

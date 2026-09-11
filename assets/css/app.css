@@ -82,6 +82,39 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #f4f6f3; c
 .btn-morning { background: var(--amber-400); color: #fff; padding: 7px 14px; border-radius: var(--radius-md); text-decoration: none; font-size: 13px; display: flex; align-items: center; gap: 6px; }
 .content { padding: 22px 24px; flex: 1; animation: fadeInPage .5s ease-out; }
 
+/* ---- ESTATE SWITCHER (topbar dropdown) ---- */
+.estate-switch { position: relative; margin-top: 1px; }
+.estate-switch-trigger { font-family: inherit; display: flex; align-items: center; gap: 5px; background: none; border: none; cursor: pointer; padding: 2px 6px 2px 2px; border-radius: 6px; font-size: 11px; font-weight: 600; color: var(--green-600); transition: background .15s; }
+.estate-switch-trigger:hover { background: var(--green-50); }
+.estate-switch-trigger i:first-child { font-size: 11px; }
+.estate-switch-caret { font-size: 13px; color: var(--gray-400); transition: transform .15s ease; }
+.estate-switch.open .estate-switch-caret { transform: rotate(180deg); }
+.estate-switch-menu {
+  position: absolute; top: calc(100% + 8px); left: 0; width: 300px; max-width: 90vw;
+  background: #fff; border: 1px solid #e8ede5; border-radius: var(--radius-lg);
+  box-shadow: 0 12px 32px rgba(0,0,0,.16); padding: 8px; z-index: 250;
+  opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-8px);
+  transition: opacity .18s ease, transform .18s ease, visibility .18s;
+}
+.estate-switch.open .estate-switch-menu { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0); }
+.estate-switch-option { font-family: inherit; display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 9px 10px; border-radius: var(--radius-md); border: 1px solid transparent; background: none; cursor: pointer; margin-bottom: 2px; transition: background .15s; }
+.estate-switch-option:hover:not(:disabled) { background: var(--green-50); }
+.estate-switch-option.current { background: var(--green-50); border-color: var(--green-200); cursor: default; }
+.eso-icon { width: 30px; height: 30px; border-radius: 8px; background: var(--green-50); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
+.eso-icon img { width: 100%; height: 100%; object-fit: contain; padding: 3px; }
+.eso-info { flex: 1; min-width: 0; }
+.eso-name { font-size: 13px; font-weight: 700; color: var(--green-900); display: flex; align-items: center; gap: 6px; }
+.eso-loc { font-size: 11px; color: var(--gray-400); }
+.eso-badge { font-size: 9px; font-weight: 700; background: var(--green-100); color: var(--green-800); padding: 1px 6px; border-radius: 10px; }
+.estate-switch-option i.ti-check { color: var(--green-600); flex-shrink: 0; }
+.estate-switch-option i.ti-chevron-right { color: var(--gray-400); flex-shrink: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .estate-switch-menu, .estate-switch-caret { transition: none; }
+}
+@media (max-width: 600px) {
+  .estate-switch-menu { width: 260px; }
+}
+
 /* ---- SLIDE-IN TRANSITIONS (page loads + JS tab switches) ---- */
 @keyframes fadeInPage {
   from { opacity: 0; transform: translateY(24px); }

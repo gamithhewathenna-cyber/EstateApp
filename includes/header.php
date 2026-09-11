@@ -151,20 +151,12 @@ $_themeAccent   = $appSettings['theme_accent']   ?? '#4CAF50';
   </nav>
 
   <div class="sidebar-footer">
-    <!-- Estate switcher -->
+    <!-- Active estate (read-only — switch it from the dropdown in the topbar) -->
     <div style="padding:8px 10px;margin-bottom:4px">
       <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Active Estate</div>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-        <div style="display:flex;align-items:center;gap:7px;min-width:0">
-          <div style="width:8px;height:8px;border-radius:50%;background:var(--green-400);flex-shrink:0"></div>
-          <span style="font-size:12px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?= sanitize($activeEstateName) ?></span>
-        </div>
-        <button type="button" onclick="openModal('modal-switch-estate')"
-           style="font-family:inherit;font-size:10px;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);padding:3px 8px;border-radius:20px;border:none;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .15s"
-           onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'"
-           title="Switch Estate">
-          <i class="ti ti-switch-horizontal" style="font-size:11px;vertical-align:-1px"></i> Switch
-        </button>
+      <div style="display:flex;align-items:center;gap:7px;min-width:0">
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--green-400);flex-shrink:0"></div>
+        <span style="font-size:12px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?= sanitize($activeEstateName) ?></span>
       </div>
     </div>
     <div class="user-info">
@@ -188,9 +180,43 @@ $_themeAccent   = $appSettings['theme_accent']   ?? '#4CAF50';
     </button>
     <div>
       <h1 class="page-title" style="margin:0;line-height:1.1"><?= $pageTitle ?? 'Dashboard' ?></h1>
-      <div style="font-size:11px;color:var(--gray-400);display:flex;align-items:center;gap:4px;margin-top:1px">
-        <i class="ti ti-trees" style="font-size:11px;color:var(--green-500)"></i>
-        <span style="font-weight:600;color:var(--green-600)"><?= sanitize($_estateName) ?></span>
+      <div class="estate-switch" id="estate-switch">
+        <button type="button" class="estate-switch-trigger" onclick="toggleEstateDropdown(event)">
+          <i class="ti ti-trees"></i>
+          <span><?= sanitize($_estateName) ?></span>
+          <i class="ti ti-chevron-down estate-switch-caret"></i>
+        </button>
+        <div class="estate-switch-menu">
+          <?php foreach ($switchableEstates as $se): $isCurrent = ((int)$se['id'] === (int)$activeEstateId); ?>
+          <form method="POST" action="<?= BASE_URL ?>/estate-picker.php" onsubmit="return fmSwitchEstate(this)">
+            <input type="hidden" name="estate_id" value="<?= $se['id'] ?>">
+            <button type="submit" class="estate-switch-option <?= $isCurrent ? 'current' : '' ?>" <?= $isCurrent ? 'disabled' : '' ?>>
+              <div class="eso-icon">
+                <?php if (!empty($se['logo_file'])): ?>
+                <img src="<?= BASE_URL ?>/assets/img/<?= sanitize($se['logo_file']) ?>" alt="">
+                <?php else: ?>
+                <i class="ti ti-trees" style="color:var(--green-600);font-size:15px"></i>
+                <?php endif; ?>
+              </div>
+              <div class="eso-info">
+                <div class="eso-name">
+                  <?= sanitize($se['name']) ?>
+                  <?php if ($se['is_default']): ?><span class="eso-badge">DEFAULT</span><?php endif; ?>
+                </div>
+                <?php if ($se['location']): ?><div class="eso-loc"><?= sanitize($se['location']) ?></div><?php endif; ?>
+              </div>
+              <?php if ($isCurrent): ?>
+              <i class="ti ti-check"></i>
+              <?php else: ?>
+              <i class="ti ti-chevron-right"></i>
+              <?php endif; ?>
+            </button>
+          </form>
+          <?php endforeach; ?>
+          <?php if (!$switchableEstates): ?>
+          <div class="empty-state"><i class="ti ti-trees-off"></i><p>No estates available</p></div>
+          <?php endif; ?>
+        </div>
       </div>
     </div>
     <div class="topbar-right">
