@@ -142,8 +142,18 @@ if ($factoriesReady) {
 
     $factories = DB::fetchAll("SELECT * FROM factories WHERE estate_id=? ORDER BY is_active DESC, name ASC", [$estateId]);
 
-    $curMonth    = date('Y-m-01');
-    $curPrices   = DB::fetchAll("SELECT factory_id, price_per_kg FROM factory_prices WHERE estate_id=? AND price_month=?", [$estateId, $curMonth]);
+    // ── SHARED FILTER: Year + Month drives Overview stats AND the Deliveries
+    // list (Factory further narrows Deliveries only). Defaults to the
+    // current month. Computed here (not just inside the Deliveries block)
+    // so Overview reacts to it too instead of always showing "this month".
+    $filterFactory  = $_GET['factory']  ?? 'all'; // 'all' | 'none' (unassigned) | <factory id>
+    $filterYear     = $_GET['year']     ?? date('Y');
+    $filterMonthNum = $_GET['monthnum'] ?? date('m');
+    $filterMonth    = $filterYear . '-' . str_pad($filterMonthNum, 2, '0', STR_PAD_LEFT);
+    $filterMonthStart = $filterMonth . '-01';
+    $filterMonthLabel = date('F Y', strtotime($filterMonthStart));
+
+    $curPrices   = DB::fetchAll("SELECT factory_id, price_per_kg FROM factory_prices WHERE estate_id=? AND price_month=?", [$estateId, $filterMonthStart]);
     $curPriceMap = array_column($curPrices, 'price_per_kg', 'factory_id');
 
     // Daily plucking totals (whole estate, all workers/sections combined —
@@ -162,7 +172,7 @@ if ($factoriesReady) {
         LEFT JOIN factory_deliveries fd ON fd.estate_id=? AND fd.delivery_date=dk.assignment_date
         LEFT JOIN factories f ON fd.factory_id=f.id
         LEFT JOIN factory_prices fp ON fp.factory_id=fd.factory_id AND fp.price_month=DATE_FORMAT(dk.assignment_date,'%Y-%m-01')
-        ORDER BY dk.assignment_date DESC", [$estateId, $curMonth, $curMonth, $estateId]);
+        ORDER BY dk.assignment_date DESC", [$estateId, $filterMonthStart, $filterMonthStart, $estateId]);
 
     // Per-factory this-month totals (based on confirmed factory weight only)
     $factoryMonthMap = [];
@@ -208,15 +218,10 @@ if ($factoriesReady) {
         JOIN factories f ON fd.factory_id=f.id
         ORDER BY dk.assignment_date DESC LIMIT 10", [$estateId, $estateId]);
 
-    // ── DELIVERIES TAB: filters ──
+    // ── DELIVERIES TAB: uses the shared Year/Month filter above, plus Factory ──
     // Shows every day's total Tea Plucking (KG) for the period — not just
     // days already tied to a factory — so a factory (and weight) can be
     // assigned here too, for days that predate this feature or were missed.
-    $filterFactory  = $_GET['factory']  ?? 'all'; // 'all' | 'none' (unassigned) | <factory id>
-    $filterYear     = $_GET['year']     ?? date('Y');
-    $filterMonthNum = $_GET['monthnum'] ?? date('m');
-    $filterMonth    = $filterYear . '-' . str_pad($filterMonthNum, 2, '0', STR_PAD_LEFT);
-
     $dateWhere  = "da.estate_id=? AND LOWER(wt.unit_label)='kg' AND da.approval_status='approved' AND DATE_FORMAT(da.assignment_date,'%Y-%m')=?";
     $dateParams = [$estateId, $filterMonth];
 
@@ -346,7 +351,7 @@ require_once __DIR__ . '/includes/header.php';
 }
 </style>
 
-<!-- STICKY HEADER: TABS + (on Deliveries) FILTERS -->
+<!-- STICKY HEADER: TABS + YEAR/MONTH/FACTORY FILTER (always visible, never covered while scrolling) -->
 <div class="fm-nav-wrap">
   <div class="fm-nav">
     <a href="#overview"   class="fm-tab active" onclick="return fmShowTab('overview',this)">
@@ -363,11 +368,11 @@ require_once __DIR__ . '/includes/header.php';
     </a>
   </div>
 
-  <!-- Deliveries filters — live in the header so they're always visible and never covered while scrolling -->
-  <div class="fm-filter-bar" id="fm-deliv-filters" hidden>
-    <form method="GET" action="factory-management.php#deliveries" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+  <!-- Year/Month filter — always visible in the header (drives Overview + Deliveries), Factory narrows Deliveries only -->
+  <div class="fm-filter-bar">
+    <form method="GET" id="fm-filter-form" action="factory-management.php#overview" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
       <div class="form-group" style="min-width:180px">
-        <label>Factory</label>
+        <label>Factory <span style="font-weight:400;color:var(--gray-400)">(Deliveries only)</span></label>
         <select name="factory">
           <option value="all" <?= $filterFactory === 'all' ? 'selected' : '' ?>>All Factories</option>
           <option value="none" <?= $filterFactory === 'none' ? 'selected' : '' ?>>Unassigned</option>
@@ -394,7 +399,7 @@ require_once __DIR__ . '/includes/header.php';
         </select>
       </div>
       <button type="submit" class="btn btn-primary"><i class="ti ti-filter"></i> Apply Filters</button>
-      <a href="factory-management.php#deliveries" class="btn btn-secondary">Reset</a>
+      <a href="factory-management.php" id="fm-filter-reset" class="btn btn-secondary">Reset</a>
     </form>
   </div>
 </div>
@@ -425,7 +430,7 @@ require_once __DIR__ . '/includes/header.php';
     <!-- Daily trend -->
     <div class="card">
       <div class="card-header">
-        <div class="card-title"><i class="ti ti-chart-bar"></i> Factory Deliveries (KG) — <?= date('F Y') ?></div>
+        <div class="card-title"><i class="ti ti-chart-bar"></i> Factory Deliveries (KG) — <?= $filterMonthLabel ?></div>
       </div>
       <?php if ($dailyFactoryKg): ?>
       <div class="mini-chart" style="height:120px;gap:3px">
@@ -442,7 +447,7 @@ require_once __DIR__ . '/includes/header.php';
     <!-- Factory performance breakdown -->
     <div class="card">
       <div class="card-header">
-        <div class="card-title"><i class="ti ti-chart-pie"></i> Factory Performance (This Month)</div>
+        <div class="card-title"><i class="ti ti-chart-pie"></i> Factory Performance — <?= $filterMonthLabel ?></div>
         <a href="#deliveries" class="card-action" onclick="return fmShowTab('deliveries')">View All</a>
       </div>
       <?php if ($factoryMonthMap): ?>
@@ -517,7 +522,7 @@ require_once __DIR__ . '/includes/header.php';
         <thead>
           <tr>
             <th>Name</th><th style="text-align:right">Monthly Price (LKR/KG)</th>
-            <th style="text-align:right">Total KG (This Month)</th><th style="text-align:right">Total Value (LKR)</th>
+            <th style="text-align:right">Total KG (<?= $filterMonthLabel ?>)</th><th style="text-align:right">Total Value (LKR)</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -587,7 +592,7 @@ require_once __DIR__ . '/includes/header.php';
       <table>
         <thead>
           <tr>
-            <th>Name</th><th>Location</th><th style="text-align:right">Price This Month</th>
+            <th>Name</th><th>Location</th><th style="text-align:right">Price — <?= $filterMonthLabel ?></th>
             <th style="text-align:right">Deliveries</th><th>Status</th><th></th>
           </tr>
         </thead>
@@ -798,8 +803,13 @@ function fmShowTab(id, el) {
   document.querySelectorAll('.fm-tab').forEach(function(i) { i.classList.remove('active'); });
   if (!el) el = document.querySelector('.fm-tab[href="#' + id + '"]');
   if (el) el.classList.add('active');
-  var delivFilters = document.getElementById('fm-deliv-filters');
-  if (delivFilters) delivFilters.hidden = (id !== 'deliveries');
+  // Keep the filter form's target (and Reset link) pointed at whichever
+  // tab is currently open, so applying/resetting filters doesn't bounce
+  // you over to a different tab.
+  var filterForm = document.getElementById('fm-filter-form');
+  if (filterForm) filterForm.action = 'factory-management.php#' + id;
+  var resetLink = document.getElementById('fm-filter-reset');
+  if (resetLink) resetLink.href = 'factory-management.php#' + id;
   if (history.replaceState) history.replaceState(null, '', '#' + id);
   return false;
 }
