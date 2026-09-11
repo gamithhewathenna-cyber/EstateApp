@@ -10,6 +10,7 @@ $nav = [
     ['key'=>'payroll',     'label'=>'Payroll',             'icon'=>'ti-cash',             'roles'=>['admin']],
     ['key'=>'expenses',    'label'=>'Expenses',            'icon'=>'ti-receipt',          'roles'=>['admin']],
     ['key'=>'production',  'label'=>'Tea Production',      'icon'=>'ti-plant-2',          'roles'=>['admin']],
+    ['key'=>'factory-management', 'label'=>'Factory Management', 'icon'=>'ti-building-factory-2', 'roles'=>['admin']],
     ['key'=>'fertilizer',  'label'=>'Fertilizer Cycles',   'icon'=>'ti-droplet',          'roles'=>['admin']],
     ['key'=>'clearing',    'label'=>'Clearing Cycles',     'icon'=>'ti-scissors',         'roles'=>['admin']],
     ['key'=>'plantations', 'label'=>'Plantation Sections', 'icon'=>'ti-trees',            'roles'=>['admin']],

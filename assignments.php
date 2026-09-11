@@ -40,6 +40,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $isSprayingWT = in_array($wtUnit, ['tank','tanks','tree','trees']); // Tank/Tree = manual per-worker qty
         $isAutoUnit   = (!$isPluckingWT && !$isSprayingWT);           // Day/Unit = auto
 
+        // Which factory this plucked tea is being sent to (plucking records only)
+        $factoryId = $isPluckingWT ? ((int)($_POST['factory_id'] ?? 0) ?: null) : null;
+
         $approvalStatus = $isAdmin ? 'approved' : 'pending';
         $approvedBy     = $isAdmin ? $uid : null;
         $approvedAt     = $isAdmin ? date('Y-m-d H:i:s') : null;
@@ -63,10 +66,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($workerQty <= 0) continue; // skip workers with no KG entered
             }
             $payment = round($workerQty * $rate, 2);
-            DB::insert("INSERT INTO daily_assignments 
-                (estate_id,assignment_date,worker_id,plantation_id,work_type_id,quantity,rate,payment,notes,created_by,payment_status,approval_status,approved_by,approved_at)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                [$estateId,$date,$wid,$pid,$wtid,$workerQty,$rate,$payment,$notes,$uid,'pending',$approvalStatus,$approvedBy,$approvedAt]);
+            DB::insert("INSERT INTO daily_assignments
+                (estate_id,assignment_date,worker_id,plantation_id,work_type_id,factory_id,quantity,rate,payment,notes,created_by,payment_status,approval_status,approved_by,approved_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                [$estateId,$date,$wid,$pid,$wtid,$factoryId,$workerQty,$rate,$payment,$notes,$uid,'pending',$approvalStatus,$approvedBy,$approvedAt]);
             $saved++;
         }
 
@@ -94,10 +97,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $tempPayment = round($tempQty * $rate, 2);
 
             // Save with worker_id = 0 (temp), store name in notes prefixed with TEMP:
-            DB::insert("INSERT INTO daily_assignments 
-                (estate_id,assignment_date,worker_id,plantation_id,work_type_id,quantity,rate,payment,notes,created_by,payment_status,approval_status,approved_by,approved_at)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                [$estateId, $date, 0, $pid, $wtid, $tempQty, $rate, $tempPayment,
+            DB::insert("INSERT INTO daily_assignments
+                (estate_id,assignment_date,worker_id,plantation_id,work_type_id,factory_id,quantity,rate,payment,notes,created_by,payment_status,approval_status,approved_by,approved_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                [$estateId, $date, 0, $pid, $wtid, $factoryId, $tempQty, $rate, $tempPayment,
                  'TEMP:' . $tempName . ($notes ? ' | ' . $notes : ''),
                  $uid, 'pending', $approvalStatus, $approvedBy, $approvedAt]);
             $saved++;
@@ -123,8 +126,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $manualRate = (float)($_POST['rate'] ?? 0);
         $rate       = $manualRate > 0 ? $manualRate : (float)(DB::fetchOne("SELECT rate_per_unit FROM work_types WHERE id=?",[$wtid])['rate_per_unit'] ?? 0);
         $payment    = round($qty * $rate, 2);
-        DB::execute("UPDATE daily_assignments SET assignment_date=?,worker_id=?,plantation_id=?,work_type_id=?,quantity=?,rate=?,payment=?,notes=?,updated_at=NOW() WHERE id=?",
-            [$date,$wid,$pid,$wtid,$qty,$rate,$payment,$notes,$id]);
+        $factoryId  = (int)($_POST['factory_id'] ?? 0) ?: null;
+        DB::execute("UPDATE daily_assignments SET assignment_date=?,worker_id=?,plantation_id=?,work_type_id=?,factory_id=?,quantity=?,rate=?,payment=?,notes=?,updated_at=NOW() WHERE id=?",
+            [$date,$wid,$pid,$wtid,$factoryId,$qty,$rate,$payment,$notes,$id]);
         flash('success', 'Assignment updated.');
         redirect('/assignments.php?date=' . $date);
     }
@@ -193,6 +197,11 @@ $editRow      = ($editId && $isAdmin) ? DB::fetchOne("SELECT * FROM daily_assign
 $workers     = DB::fetchAll("SELECT * FROM workers WHERE estate_id=? AND is_active=1 ORDER BY full_name", [$estateId]);
 $plantations = DB::fetchAll("SELECT * FROM plantations WHERE estate_id=? AND is_active=1 ORDER BY name", [$estateId]);
 $workTypes   = DB::fetchAll("SELECT * FROM work_types WHERE estate_id=? AND is_active=1 AND is_deleted=0 ORDER BY id", [$estateId]);
+// Wrapped in try/catch: if the factory_management migration hasn't been
+// applied yet, this page must keep working (just without factory assignment).
+try {
+    $factories = DB::fetchAll("SELECT * FROM factories WHERE estate_id=? AND is_active=1 ORDER BY name", [$estateId]);
+} catch (Exception $e) { $factories = []; }
 
 // Pending approvals count
 $pendingCount = DB::fetchOne("SELECT COUNT(*) as cnt FROM daily_assignments WHERE estate_id=? AND approval_status='pending'", [$estateId])['cnt'] ?? 0;
@@ -596,6 +605,16 @@ require_once __DIR__ . '/includes/header.php';
           <input type="number" name="rate" id="edit-rate" value="<?= $editRow['rate'] ?>" min="0" step="0.01" required oninput="calcEditPayment()" style="border-color:var(--amber-400)">
           <div style="font-size:11px;color:var(--amber-600);margin-top:3px">Override rate — won't affect other records</div>
         </div>
+        <div class="form-group">
+          <label>Assign Factory</label>
+          <select name="factory_id">
+            <option value="">— Not assigned —</option>
+            <?php foreach ($factories as $f): ?>
+            <option value="<?= $f['id'] ?>" <?= $f['id']==($editRow['factory_id']??0)?'selected':'' ?>><?= sanitize($f['name']) ?></option>
+            <?php endforeach; ?>
+          </select>
+          <div style="font-size:11px;color:var(--gray-400);margin-top:3px">Which factory this plucked tea is being sent to</div>
+        </div>
         <div class="form-group col-full"><label>Notes</label><input type="text" name="notes" value="<?= sanitize($editRow['notes']) ?>"></div>
       </div>
       <div class="calc-box" style="background:var(--amber-50);border-color:var(--amber-100)">
@@ -646,6 +665,17 @@ require_once __DIR__ . '/includes/header.php';
           <div class="wt-rate">Rs. <?= number_format($wt['rate_per_unit'],0) ?> / <?= sanitize($wt['unit_label']) ?></div>
         </div>
         <?php endforeach; ?>
+      </div>
+      <?php $initialIsPlucking = (strtolower(trim($workTypes[0]['unit_label'] ?? '')) === 'kg'); ?>
+      <div class="form-group" id="factory-field-wrap" style="margin-bottom:16px;<?= $initialIsPlucking ? '' : 'display:none' ?>">
+        <label>Assign Factory</label>
+        <select name="factory_id" id="a-factory-id">
+          <option value="">— Not assigned yet —</option>
+          <?php foreach ($factories as $f): ?>
+          <option value="<?= $f['id'] ?>"><?= sanitize($f['name']) ?></option>
+          <?php endforeach; ?>
+        </select>
+        <div style="font-size:11px;color:var(--gray-400);margin-top:4px">Which factory this plucked tea is being sent to</div>
       </div>
       <div style="margin-bottom:16px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
@@ -1361,6 +1391,10 @@ function selectWT(el, id, rate, unit, unitLower) {
   };
   var hintEl = document.getElementById('qty-hint');
   if (hintEl) hintEl.textContent = hints[currentMode];
+
+  // Show "Assign Factory" only for Tea Plucking (KG) records
+  var factoryWrap = document.getElementById('factory-field-wrap');
+  if (factoryWrap) factoryWrap.style.display = (currentMode === 'plucking') ? 'block' : 'none';
 
   // Update worker rows visibility
   updateWorkerRows();
