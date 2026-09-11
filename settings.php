@@ -444,44 +444,53 @@ require_once __DIR__ . '/includes/header.php';
 <style>
 /* ── SETTINGS PAGE STYLES ── */
 .settings-grid {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  gap: 24px;
-  align-items: start;
+  display: block;
 }
 .settings-nav {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 2px;
   background: #fff;
   border: 1px solid #e8ede5;
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  padding: 6px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   position: sticky;
   top: 80px;
+  z-index: 5;
 }
+.settings-nav::-webkit-scrollbar { display: none; }
 .snav-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 13px 16px;
+  gap: 8px;
+  padding: 10px 16px;
   font-size: 13px;
   font-weight: 500;
   color: var(--gray-600);
   cursor: pointer;
-  border-left: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+  border-radius: var(--radius-md);
   text-decoration: none;
   transition: all .15s;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 .snav-item:hover  { background: var(--green-50); color: var(--green-800); }
-.snav-item.active { background: var(--green-50); color: var(--green-800); border-left-color: var(--green-600); font-weight: 700; }
-.snav-item i      { font-size: 18px; flex-shrink: 0; }
-.snav-divider     { border-top: 1px solid #f0f0eb; margin: 4px 0; }
+.snav-item.active { background: var(--green-50); color: var(--green-800); border-bottom-color: var(--green-600); font-weight: 700; }
+.snav-item i      { font-size: 17px; flex-shrink: 0; }
+.snav-divider     { display: none; }
 .settings-section {
   background: #fff;
   border: 1px solid #e8ede5;
   border-radius: var(--radius-lg);
   padding: 24px;
   margin-bottom: 20px;
-  scroll-margin-top: 80px;
 }
 .settings-section-title {
   font-size: 16px;
@@ -541,60 +550,18 @@ require_once __DIR__ . '/includes/header.php';
 
 /* ── RESPONSIVE: Tablet (≤900px) ── */
 @media (max-width: 900px) {
-  .settings-grid {
-    grid-template-columns: 1fr !important;
-    gap: 0;
-  }
-  .settings-nav {
-    position: static !important;
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    gap: 0;
-    padding: 6px;
-    margin-bottom: 16px;
-    border-radius: var(--radius-lg);
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  .settings-nav::-webkit-scrollbar { display: none; }
-  .snav-item {
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    border-left: none !important;
-    border-bottom: 3px solid transparent !important;
-    border-radius: var(--radius-md) !important;
-    padding: 8px 12px !important;
-    gap: 4px !important;
-    min-width: 72px;
-    font-size: 10px !important;
-    text-align: center;
-    white-space: nowrap;
-  }
-  .snav-item.active {
-    border-left-color: transparent !important;
-    border-bottom-color: var(--green-600) !important;
-    background: var(--green-50) !important;
-  }
-  .snav-item i    { font-size: 20px !important; }
-  .snav-item span { font-size: 10px !important; color: var(--gray-600); }
-  .snav-divider   { display: none !important; }
   .settings-section { padding: 16px; }
   .logo-current { flex-direction: column; align-items: flex-start; gap: 12px; }
 }
 
 /* ── RESPONSIVE: Phone (≤600px) ── */
 @media (max-width: 600px) {
-  .settings-grid { gap: 0; }
   .settings-nav { padding: 4px; margin-bottom: 12px; }
   .snav-item {
-    padding: 6px 8px !important;
-    min-width: 60px;
-    font-size: 9px !important;
+    padding: 8px 10px;
+    font-size: 11px;
   }
-  .snav-item i { font-size: 18px !important; }
+  .snav-item i { font-size: 15px; }
   .settings-section { padding: 14px; margin-bottom: 14px; }
   .settings-section-title { font-size: 14px; padding-bottom: 10px; margin-bottom: 14px; }
 
@@ -616,27 +583,24 @@ require_once __DIR__ . '/includes/header.php';
 
 <div class="settings-grid">
 
-<!-- LEFT NAV -->
+<!-- HORIZONTAL TABS -->
 <div class="settings-nav">
-  <a href="#app"       class="snav-item active" onclick="scrollTo('app',this)"       title="App Settings">
+  <a href="#app"       class="snav-item active" onclick="return showTab('app',this)"       title="App Settings">
     <i class="ti ti-settings-2"></i><span> App Settings</span>
   </a>
-  <a href="#profile"   class="snav-item" onclick="scrollTo('profile',this)"          title="My Profile">
+  <a href="#profile"   class="snav-item" onclick="return showTab('profile',this)"          title="My Profile">
     <i class="ti ti-user-circle"></i><span> My Profile</span>
   </a>
-  <a href="#password"  class="snav-item" onclick="scrollTo('password',this)"         title="Change Password">
+  <a href="#password"  class="snav-item" onclick="return showTab('password',this)"         title="Change Password">
     <i class="ti ti-lock"></i><span> Change Password</span>
   </a>
-  <div class="snav-divider"></div>
-  <a href="#worktypes" class="snav-item" onclick="scrollTo('worktypes',this)"        title="Work Types & Prices">
+  <a href="#worktypes" class="snav-item" onclick="return showTab('worktypes',this)"        title="Work Types & Prices">
     <i class="ti ti-tools"></i><span> Work Types</span>
   </a>
-  <div class="snav-divider"></div>
-  <a href="#users"     class="snav-item" onclick="scrollTo('users',this)"            title="Reset User Passwords">
+  <a href="#users"     class="snav-item" onclick="return showTab('users',this)"            title="Reset User Passwords">
     <i class="ti ti-users"></i><span> User Passwords</span>
   </a>
-  <div class="snav-divider"></div>
-  <a href="#backup"    class="snav-item" onclick="scrollTo('backup',this)"           title="Backup & Restore">
+  <a href="#backup"    class="snav-item" onclick="return showTab('backup',this)"           title="Backup & Restore">
     <i class="ti ti-database-export"></i><span> Backup & Restore</span>
   </a>
 </div>
@@ -784,7 +748,7 @@ require_once __DIR__ . '/includes/header.php';
   </div>
 
   <!-- ── MY PROFILE ── -->
-  <div class="settings-section" id="profile">
+  <div class="settings-section" id="profile" hidden>
     <div class="settings-section-title">
       <i class="ti ti-user-circle"></i> My Profile
     </div>
@@ -829,7 +793,7 @@ require_once __DIR__ . '/includes/header.php';
   </div>
 
   <!-- ── CHANGE PASSWORD ── -->
-  <div class="settings-section" id="password">
+  <div class="settings-section" id="password" hidden>
     <div class="settings-section-title">
       <i class="ti ti-lock"></i> Change My Password
     </div>
@@ -868,7 +832,7 @@ require_once __DIR__ . '/includes/header.php';
   </div>
 
   <!-- ── WORK TYPES & PRICES ── -->
-  <div class="settings-section" id="worktypes">
+  <div class="settings-section" id="worktypes" hidden>
     <div class="settings-section-title">
       <i class="ti ti-tools"></i> Work Types & Prices
       <span style="font-size:12px;font-weight:400;color:var(--gray-400);margin-left:4px">Price changes only affect future assignments</span>
@@ -963,7 +927,7 @@ require_once __DIR__ . '/includes/header.php';
   </div>
 
   <!-- ── RESET USER PASSWORDS ── -->
-  <div class="settings-section" id="users">
+  <div class="settings-section" id="users" hidden>
     <div class="settings-section-title">
       <i class="ti ti-users"></i> Reset User Passwords
       <span style="font-size:12px;font-weight:400;color:var(--gray-400);margin-left:4px">Admin only</span>
@@ -990,7 +954,7 @@ require_once __DIR__ . '/includes/header.php';
   </div>
 
   <!-- ── BACKUP & RESTORE ── -->
-  <div class="settings-section" id="backup">
+  <div class="settings-section" id="backup" hidden>
     <div class="settings-section-title">
       <i class="ti ti-database-export"></i> Backup & Restore
     </div>
@@ -1333,11 +1297,13 @@ function openResetModal(uid, name) {
   openModal('modal-reset-user');
 }
 
-// Smooth scroll + active nav
-function scrollTo(id, el) {
-  document.getElementById(id)?.scrollIntoView({behavior:'smooth', block:'start'});
+// Tab switching
+function showTab(id, el) {
+  document.querySelectorAll('.settings-section').forEach(s => { s.hidden = (s.id !== id); });
   document.querySelectorAll('.snav-item').forEach(i => i.classList.remove('active'));
+  if (!el) el = document.querySelector('.snav-item[href="#' + id + '"]');
   if (el) el.classList.add('active');
+  if (history.replaceState) history.replaceState(null, '', '#' + id);
   return false;
 }
 
@@ -1368,27 +1334,13 @@ function copyCron() {
   });
 }
 
-// Auto-highlight nav on scroll
-window.addEventListener('scroll', function() {
+// Open the tab named in the URL hash on load, else default to the first tab
+(function() {
   var sections = ['app','profile','password','worktypes','users','backup'];
-  for (var i = sections.length-1; i >= 0; i--) {
-    var el = document.getElementById(sections[i]);
-    if (el && el.getBoundingClientRect().top <= 120) {
-      document.querySelectorAll('.snav-item').forEach(n => n.classList.remove('active'));
-      document.querySelector('[href="#'+sections[i]+'"]')?.classList.add('active');
-      break;
-    }
-  }
-});
-
-// Open section from URL hash
-var hash = window.location.hash;
-if (hash) {
-  setTimeout(function() {
-    var el = document.querySelector('[href="'+hash+'"]');
-    if (el) scrollTo(hash.slice(1), el);
-  }, 100);
-}
+  var id = window.location.hash ? window.location.hash.slice(1) : '';
+  if (sections.indexOf(id) === -1) id = 'app';
+  showTab(id);
+})();
 </script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
