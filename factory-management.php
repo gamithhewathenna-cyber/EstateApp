@@ -101,7 +101,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 function fmMonthOptions($monthsBack = 12, $monthsForward = 0) {
     $opts = [];
     $base = strtotime(date('Y-m-01'));
-    for ($i = -$monthsForward; $i <= $monthsBack; $i++) {
+    // Oldest first, newest last — so the dropdown reads Jan, Feb, Mar... order.
+    for ($i = $monthsBack; $i >= -$monthsForward; $i--) {
         $ts = strtotime(sprintf('%+d month', -$i), $base);
         $opts[date('Y-m', $ts)] = date('F Y', $ts);
     }
