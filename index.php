@@ -29,10 +29,6 @@ else                   $rangeLabel = fmtDate($dateFrom) . ' → ' . fmtDate($dat
 $workersRange  = DB::fetchOne("SELECT COUNT(DISTINCT worker_id) as cnt FROM daily_assignments WHERE estate_id=? AND approval_status='approved' AND assignment_date BETWEEN ? AND ?", [$estateId,$dateFrom,$dateTo]);
 $totalActive   = DB::fetchOne("SELECT COUNT(*) as cnt FROM workers WHERE estate_id=? AND is_active=1", [$estateId]);
 
-// KG in range (plucking only)
-$kgRange  = DB::fetchOne("SELECT COALESCE(SUM(quantity),0) as total FROM daily_assignments WHERE estate_id=? AND approval_status='approved' AND work_type_id IN (SELECT id FROM work_types WHERE estate_id=? AND LOWER(unit_label)='kg') AND assignment_date BETWEEN ? AND ?", [$estateId,$estateId,$dateFrom,$dateTo]);
-$kgToday  = DB::fetchOne("SELECT COALESCE(SUM(quantity),0) as total FROM daily_assignments WHERE estate_id=? AND approval_status='approved' AND work_type_id IN (SELECT id FROM work_types WHERE estate_id=? AND LOWER(unit_label)='kg') AND assignment_date=?", [$estateId,$estateId,$today]);
-
 // Payroll in range
 $payRange = DB::fetchOne("SELECT COALESCE(SUM(payment),0) as total FROM daily_assignments WHERE estate_id=? AND approval_status='approved' AND assignment_date BETWEEN ? AND ?", [$estateId,$dateFrom,$dateTo]);
 
@@ -144,6 +140,23 @@ $currentMonthPayroll = DB::fetchOne("SELECT COALESCE(SUM(payment),0) as total
     FROM daily_assignments WHERE estate_id=? AND approval_status='approved'
     AND DATE_FORMAT(assignment_date,'%Y-%m')=?", [$estateId, date('Y-m')]);
 
+// Net Profit (this month) = Factory Value (confirmed deliveries × price) − Factory
+// Expenses. Wrapped in try/catch: Factory Management's tables may not exist yet
+// on every install, so the dashboard must keep working without this card's data.
+$netProfitThisMonth = 0;
+try {
+    $curMonthStart = date('Y-m-01');
+    $factoryValueRow = DB::fetchOne("SELECT COALESCE(SUM(fd.factory_weight * fp.price_per_kg),0) as total
+        FROM factory_deliveries fd
+        JOIN factory_prices fp ON fp.factory_id=fd.factory_id AND fp.price_month=DATE_FORMAT(fd.delivery_date,'%Y-%m-01')
+        WHERE fd.estate_id=? AND fd.factory_weight IS NOT NULL
+          AND fd.delivery_date >= ? AND fd.delivery_date < DATE_ADD(?, INTERVAL 1 MONTH)",
+        [$estateId, $curMonthStart, $curMonthStart]);
+    $factoryExpenseRow = DB::fetchOne("SELECT COALESCE(SUM(amount),0) as total
+        FROM factory_expenses WHERE estate_id=? AND expense_month=?", [$estateId, $curMonthStart]);
+    $netProfitThisMonth = (float)($factoryValueRow['total'] ?? 0) - (float)($factoryExpenseRow['total'] ?? 0);
+} catch (Exception $e) { $netProfitThisMonth = 0; }
+
 // Section cost + KG for the selected date range
 $sectionCosts    = DB::fetchAll("SELECT p.name,
     COALESCE(SUM(da.payment),0) as cost,
@@ -236,10 +249,15 @@ require_once __DIR__ . '/includes/header.php';
 
 <!-- ── STAT CARDS ─────────────────────────────────── -->
 <div class="dash-stats-6">
-  <div class="stat-card teal">
-    <div class="stat-label"><i class="ti ti-weight"></i> KG Plucked</div>
-    <div class="stat-value"><?= number_format((float)$kgRange['total'],0) ?> kg</div>
-    <div class="stat-sub">Today: <?= number_format((float)$kgToday['total'],1) ?> kg</div>
+  <div class="stat-card <?= $netProfitThisMonth >= 0 ? '' : 'red' ?>" style="border-left:3px solid <?= $netProfitThisMonth >= 0 ? 'var(--green-600)' : 'var(--red-400)' ?>">
+    <div class="stat-label"><i class="ti ti-sum"></i> Net Profit</div>
+    <div class="stat-value" style="<?= $netProfitThisMonth < 0 ? 'color:var(--red-600)' : '' ?>"><?= moneyShort($netProfitThisMonth) ?></div>
+    <div class="stat-sub"><?= date('F Y') ?> · factory</div>
+  </div>
+  <div class="stat-card teal" style="border-left:3px solid var(--teal-400)">
+    <div class="stat-label"><i class="ti ti-leaf"></i> Plucked KG (This Month)</div>
+    <div class="stat-value"><?= number_format((float)$currentMonthKg['total'],0) ?> <span style="font-size:14px;font-weight:500">kg</span></div>
+    <div class="stat-sub"><?= date('F Y') ?></div>
   </div>
   <div class="stat-card">
     <div class="stat-label"><i class="ti ti-cash"></i> Payroll</div>
@@ -250,11 +268,6 @@ require_once __DIR__ . '/includes/header.php';
     <div class="stat-label"><i class="ti ti-receipt"></i> Expenses</div>
     <div class="stat-value"><?= moneyShort($expRange['total']) ?></div>
     <div class="stat-sub">Total for period</div>
-  </div>
-  <div class="stat-card teal" style="border-left:3px solid var(--teal-400)">
-    <div class="stat-label"><i class="ti ti-leaf"></i> Plucked KG (This Month)</div>
-    <div class="stat-value"><?= number_format((float)$currentMonthKg['total'],0) ?> <span style="font-size:14px;font-weight:500">kg</span></div>
-    <div class="stat-sub"><?= date('F Y') ?></div>
   </div>
   <div class="stat-card amber" style="border-left:3px solid var(--amber-400)">
     <div class="stat-label"><i class="ti ti-receipt"></i> Weekly Expenses</div>
