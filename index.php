@@ -177,9 +177,14 @@ require_once __DIR__ . '/includes/header.php';
 /* Responsive dashboard grids */
 .dash-section-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
 .period-cost-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.dash-stats-6{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:20px}
 @media(max-width:768px){
   .dash-section-grid{grid-template-columns:1fr}
   .period-cost-grid{grid-template-columns:1fr}
+  .dash-stats-6{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:600px){
+  .dash-stats-6{grid-template-columns:1fr 1fr;gap:10px}
 }
 @media(max-width:600px){
   .range-bar{padding:12px 14px;gap:8px}
@@ -230,7 +235,7 @@ require_once __DIR__ . '/includes/header.php';
 </div>
 
 <!-- ── STAT CARDS ─────────────────────────────────── -->
-<div class="stats-grid" style="margin-bottom:20px">
+<div class="dash-stats-6">
   <div class="stat-card teal">
     <div class="stat-label"><i class="ti ti-weight"></i> KG Plucked</div>
     <div class="stat-value"><?= number_format((float)$kgRange['total'],0) ?> kg</div>
@@ -246,10 +251,6 @@ require_once __DIR__ . '/includes/header.php';
     <div class="stat-value"><?= moneyShort($expRange['total']) ?></div>
     <div class="stat-sub">Total for period</div>
   </div>
-</div>
-
-<!-- ── FIXED-PERIOD STAT CARDS ────────────────────────── -->
-<div class="stats-grid" style="margin-bottom:20px">
   <div class="stat-card teal" style="border-left:3px solid var(--teal-400)">
     <div class="stat-label"><i class="ti ti-leaf"></i> Plucked KG (This Month)</div>
     <div class="stat-value"><?= number_format((float)$currentMonthKg['total'],0) ?> <span style="font-size:14px;font-weight:500">kg</span></div>
