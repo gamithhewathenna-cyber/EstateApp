@@ -135,7 +135,7 @@ $_themeAccent   = $appSettings['theme_accent']   ?? '#4CAF50';
         </a>
         <?php if($item['key']==='workers'): ?><div class="nav-section">Finance</div><?php endif; ?>
         <?php if($item['key']==='expenses'): ?><div class="nav-section">Plantation</div><?php endif; ?>
-        <?php if($item['key']==='plantations'): ?><div class="nav-section">Admin</div><?php endif; ?>
+        <?php if($item['key']==='estates'): ?><div class="nav-section">Admin</div><?php endif; ?>
       <?php endif; ?>
     <?php endforeach; ?>
   </nav>
