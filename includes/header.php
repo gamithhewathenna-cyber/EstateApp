@@ -16,7 +16,6 @@ $nav = [
     ['key'=>'reports',        'label'=>'Reports',             'icon'=>'ti-chart-bar',        'roles'=>['admin']],
     ['key'=>'users',          'label'=>'User Management',     'icon'=>'ti-shield-lock',      'roles'=>['admin']],
     ['key'=>'settings',       'label'=>'Settings',            'icon'=>'ti-settings',         'roles'=>['admin']],
-    ['key'=>'backup',         'label'=>'Backup & Restore',    'icon'=>'ti-database-export',  'roles'=>['admin']],
     ['key'=>'tv-dashboard',   'label'=>'TV Dashboard',         'icon'=>'ti-device-tv',        'roles'=>['admin']],
     ['key'=>'estates',        'label'=>'Manage Estates',       'icon'=>'ti-trees',            'roles'=>['admin']],
 ];
