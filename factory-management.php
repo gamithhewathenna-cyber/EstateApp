@@ -17,11 +17,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $location = trim($_POST['location'] ?? '');
         $notes    = trim($_POST['notes'] ?? '');
         $active   = (int)($_POST['is_active'] ?? 1);
-        if (!$name) { flash('error', 'Factory name is required.'); redirect('/factory-management.php#factories'); }
+        if (!$name) { flash('error', 'Factory name is required.'); redirect('/factory-management.php?tab=factories'); }
 
         if ($action === 'add_factory') {
             $exists = DB::fetchOne("SELECT id FROM factories WHERE name=? AND estate_id=?", [$name, $estateId]);
-            if ($exists) { flash('error', 'A factory with this name already exists.'); redirect('/factory-management.php#factories'); }
+            if ($exists) { flash('error', 'A factory with this name already exists.'); redirect('/factory-management.php?tab=factories'); }
             DB::insert("INSERT INTO factories (estate_id,name,location,notes,is_active) VALUES (?,?,?,?,?)",
                 [$estateId, $name, $location, $notes, $active]);
             flash('success', 'Factory "' . $name . '" added.');
@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 [$name, $location, $notes, $active, $id, $estateId]);
             flash('success', 'Factory updated.');
         }
-        redirect('/factory-management.php#factories');
+        redirect('/factory-management.php?tab=factories');
     }
 
     // ── FACTORY: toggle active status ─────────────
@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $current = (int)($_POST['current'] ?? 1);
         DB::execute("UPDATE factories SET is_active=? WHERE id=? AND estate_id=?", [$current ? 0 : 1, $id, $estateId]);
         flash('success', 'Factory status updated.');
-        redirect('/factory-management.php#factories');
+        redirect('/factory-management.php?tab=factories');
     }
 
     // ── FACTORY: delete (only if never used in a delivery or expense) ──
@@ -50,12 +50,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $usedExp = DB::fetchOne("SELECT COUNT(*) as cnt FROM factory_expenses WHERE factory_id=? AND estate_id=?", [$id, $estateId]);
         if ((($used['cnt'] ?? 0) + ($usedExp['cnt'] ?? 0)) > 0) {
             flash('error', 'Cannot delete — this factory has delivery or expense record(s). Deactivate it instead.');
-            redirect('/factory-management.php#factories');
+            redirect('/factory-management.php?tab=factories');
         }
         DB::execute("DELETE FROM factory_prices WHERE factory_id=? AND estate_id=?", [$id, $estateId]);
         DB::execute("DELETE FROM factories WHERE id=? AND estate_id=?", [$id, $estateId]);
         flash('success', 'Factory deleted.');
-        redirect('/factory-management.php#factories');
+        redirect('/factory-management.php?tab=factories');
     }
 
     // ── FACTORY EXPENSE: add / edit ────────────────
@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $notes           = trim($_POST['notes'] ?? '');
         $retYear         = $_POST['ret_year']     ?? date('Y');
         $retMonthNum     = $_POST['ret_monthnum'] ?? date('m');
-        $backTo          = '/factory-management.php?year=' . urlencode($retYear) . '&monthnum=' . urlencode($retMonthNum) . '#expenses';
+        $backTo          = '/factory-management.php?year=' . urlencode($retYear) . '&monthnum=' . urlencode($retMonthNum) . '&tab=expenses';
 
         if (!$factoryId || !$expMonthYear || !$expMonthNum || $amount <= 0) {
             flash('error', 'Factory, month and a valid amount are required.');
@@ -100,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'delete_expense') {
         $retYear     = $_POST['ret_year']     ?? date('Y');
         $retMonthNum = $_POST['ret_monthnum'] ?? date('m');
-        $backTo      = '/factory-management.php?year=' . urlencode($retYear) . '&monthnum=' . urlencode($retMonthNum) . '#expenses';
+        $backTo      = '/factory-management.php?year=' . urlencode($retYear) . '&monthnum=' . urlencode($retMonthNum) . '&tab=expenses';
         DB::execute("DELETE FROM factory_expenses WHERE id=? AND estate_id=?", [(int)($_POST['id'] ?? 0), $estateId]);
         flash('success', 'Factory expense removed.');
         redirect($backTo);
@@ -113,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $price     = (float)($_POST['price_per_kg'] ?? -1);
         if (!$factoryId || !$monthIn || $price < 0) {
             flash('error', 'Factory, month and a valid price are required.');
-            redirect('/factory-management.php#prices');
+            redirect('/factory-management.php?tab=prices');
         }
         $priceMonth = date('Y-m-01', strtotime($monthIn . '-01'));
         DB::execute("INSERT INTO factory_prices (estate_id,factory_id,price_month,price_per_kg,created_by)
@@ -122,14 +122,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             [$estateId, $factoryId, $priceMonth, $price, $uid, $price]);
         flash('success', 'Price saved.');
         [$mYear, $mNum] = explode('-', $monthIn);
-        redirect('/factory-management.php?pyear=' . urlencode($mYear) . '&pmonthnum=' . urlencode($mNum) . '#prices');
+        redirect('/factory-management.php?pyear=' . urlencode($mYear) . '&pmonthnum=' . urlencode($mNum) . '&tab=prices');
     }
 
     // ── MONTHLY PRICE: delete one entry ────────────
     if ($action === 'delete_price') {
         DB::execute("DELETE FROM factory_prices WHERE id=? AND estate_id=?", [(int)($_POST['id'] ?? 0), $estateId]);
         flash('success', 'Price entry removed.');
-        redirect('/factory-management.php#prices');
+        redirect('/factory-management.php?tab=prices');
     }
 
     // ── DELIVERY: assign factory and/or confirm weight for a whole day ──
@@ -145,7 +145,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'factory'  => $_POST['ret_factory']  ?? '',
             'year'     => $_POST['ret_year']     ?? '',
             'monthnum' => $_POST['ret_monthnum'] ?? '',
-        ], fn($v) => $v !== '')) . '#deliveries';
+            'tab'      => 'deliveries',
+        ], fn($v) => $v !== ''));
 
         if (!$deliveryDate) { flash('error', 'Missing delivery date.'); redirect($backTo); }
         DB::execute("INSERT INTO factory_deliveries (estate_id, delivery_date, factory_id, factory_weight, created_by)
@@ -345,6 +346,22 @@ if ($factoriesReady) {
         WHERE fp.estate_id=? ORDER BY fp.price_month DESC, f.name ASC LIMIT 60", [$estateId]);
 }
 
+// Which tab to render as active on page load. Read from an actual GET
+// param (not the URL #fragment — the server never sees that) so the
+// correct panel is visible from the very first render. This also lets
+// every full-page redirect land back on the right tab WITHOUT putting a
+// #fragment in the URL, which is what was causing the browser to jump
+// the page down to that anchor on load (native scroll-to-fragment runs
+// before our JS un-hides the panel, so it used to fire against stale
+// layout).
+$fmTabs = ['overview', 'factories', 'deliveries', 'expenses', 'prices'];
+$activeTab = $_GET['tab'] ?? '';
+if (!in_array($activeTab, $fmTabs, true)) {
+    if (!empty($_GET['edit_factory']))      $activeTab = 'factories';
+    elseif (!empty($_GET['edit_expense']))  $activeTab = 'expenses';
+    else                                    $activeTab = 'overview';
+}
+
 require_once __DIR__ . '/includes/header.php';
 ?>
 
@@ -435,26 +452,27 @@ require_once __DIR__ . '/includes/header.php';
 <!-- STICKY HEADER: TABS + YEAR/MONTH/FACTORY FILTER (always visible, never covered while scrolling) -->
 <div class="fm-nav-wrap">
   <div class="fm-nav">
-    <a href="#overview"   class="fm-tab active" onclick="return fmShowTab('overview',this)">
+    <a href="#overview"   class="fm-tab <?= $activeTab === 'overview' ? 'active' : '' ?>" onclick="return fmShowTab('overview',this)">
       <i class="ti ti-layout-dashboard"></i><span> Overview</span>
     </a>
-    <a href="#factories"  class="fm-tab" onclick="return fmShowTab('factories',this)">
+    <a href="#factories"  class="fm-tab <?= $activeTab === 'factories' ? 'active' : '' ?>" onclick="return fmShowTab('factories',this)">
       <i class="ti ti-building-factory-2"></i><span> Factories</span>
     </a>
-    <a href="#deliveries" class="fm-tab" onclick="return fmShowTab('deliveries',this)">
+    <a href="#deliveries" class="fm-tab <?= $activeTab === 'deliveries' ? 'active' : '' ?>" onclick="return fmShowTab('deliveries',this)">
       <i class="ti ti-truck-delivery"></i><span> Deliveries</span>
     </a>
-    <a href="#expenses"   class="fm-tab" onclick="return fmShowTab('expenses',this)">
+    <a href="#expenses"   class="fm-tab <?= $activeTab === 'expenses' ? 'active' : '' ?>" onclick="return fmShowTab('expenses',this)">
       <i class="ti ti-receipt-2"></i><span> Factory Expenses</span>
     </a>
-    <a href="#prices"     class="fm-tab" onclick="return fmShowTab('prices',this)">
+    <a href="#prices"     class="fm-tab <?= $activeTab === 'prices' ? 'active' : '' ?>" onclick="return fmShowTab('prices',this)">
       <i class="ti ti-tag"></i><span> Monthly Prices</span>
     </a>
   </div>
 
   <!-- Year/Month filter — always visible in the header (drives Overview + Deliveries + Expenses), Factory narrows Deliveries/Expenses only -->
   <div class="fm-filter-bar">
-    <form method="GET" id="fm-filter-form" action="factory-management.php#overview" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+    <form method="GET" id="fm-filter-form" action="factory-management.php" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+      <input type="hidden" name="tab" id="fm-filter-tab-input" value="<?= sanitize($activeTab) ?>">
       <div class="form-group" style="min-width:180px">
         <label>Factory <span style="font-weight:400;color:var(--gray-400)">(Deliveries &amp; Expenses)</span></label>
         <select name="factory">
@@ -489,7 +507,7 @@ require_once __DIR__ . '/includes/header.php';
 </div>
 
 <!-- ══════════════════════ OVERVIEW ══════════════════════ -->
-<div class="fm-panel" id="overview">
+<div class="fm-panel" id="overview" <?= $activeTab === 'overview' ? '' : 'hidden' ?>>
 
   <div class="stats-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
     <div class="stat-card teal">
@@ -655,7 +673,7 @@ require_once __DIR__ . '/includes/header.php';
 </div>
 
 <!-- ══════════════════════ FACTORIES ══════════════════════ -->
-<div class="fm-panel" id="factories" hidden>
+<div class="fm-panel" id="factories" <?= $activeTab === 'factories' ? '' : 'hidden' ?>>
 
   <div class="form-panel" style="margin-bottom:20px;<?= $editFactory ? 'border:2px solid var(--amber-200)' : '' ?>">
     <div class="form-panel-title" style="<?= $editFactory ? 'color:var(--amber-600)' : '' ?>">
@@ -690,7 +708,7 @@ require_once __DIR__ . '/includes/header.php';
       </div>
       <div class="btn-group">
         <button type="submit" class="btn btn-primary"><i class="ti ti-check"></i> <?= $editFactory ? 'Update Factory' : 'Save Factory' ?></button>
-        <?php if ($editFactory): ?><a href="factory-management.php#factories" class="btn btn-secondary">Cancel</a><?php endif; ?>
+        <?php if ($editFactory): ?><a href="factory-management.php?tab=factories" class="btn btn-secondary">Cancel</a><?php endif; ?>
       </div>
     </form>
   </div>
@@ -715,7 +733,7 @@ require_once __DIR__ . '/includes/header.php';
             <td><?= pill($f['is_active'] ? 'Active' : 'Inactive', $f['is_active'] ? 'active' : 'inactive') ?></td>
             <td>
               <div style="display:flex;gap:4px;justify-content:flex-end">
-                <a href="factory-management.php?edit_factory=<?= $f['id'] ?>#factories" class="btn btn-outline btn-sm" title="Edit"><i class="ti ti-edit"></i></a>
+                <a href="factory-management.php?edit_factory=<?= $f['id'] ?>&tab=factories" class="btn btn-outline btn-sm" title="Edit"><i class="ti ti-edit"></i></a>
                 <form method="POST" style="display:inline" onsubmit="return confirm('<?= $f['is_active'] ? 'Deactivate' : 'Activate' ?> this factory?')">
                   <input type="hidden" name="action" value="toggle_factory">
                   <input type="hidden" name="id" value="<?= $f['id'] ?>">
@@ -743,7 +761,7 @@ require_once __DIR__ . '/includes/header.php';
 </div>
 
 <!-- ══════════════════════ DELIVERIES ══════════════════════ -->
-<div class="fm-panel" id="deliveries" hidden>
+<div class="fm-panel" id="deliveries" <?= $activeTab === 'deliveries' ? '' : 'hidden' ?>>
 
   <div class="stats-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px">
     <div class="stat-card teal">
@@ -825,7 +843,7 @@ require_once __DIR__ . '/includes/header.php';
 </div>
 
 <!-- ══════════════════════ FACTORY EXPENSES ══════════════════════ -->
-<div class="fm-panel" id="expenses" hidden>
+<div class="fm-panel" id="expenses" <?= $activeTab === 'expenses' ? '' : 'hidden' ?>>
 
   <div class="form-panel" style="margin-bottom:20px;<?= $editExpense ? 'border:2px solid var(--amber-200)' : '' ?>">
     <div class="form-panel-title" style="<?= $editExpense ? 'color:var(--amber-600)' : '' ?>">
@@ -906,7 +924,7 @@ require_once __DIR__ . '/includes/header.php';
       </div>
       <div class="btn-group">
         <button type="submit" class="btn btn-primary"><i class="ti ti-check"></i> <?= $editExpense ? 'Update Expense' : 'Save Expense' ?></button>
-        <?php if ($editExpense): ?><a href="factory-management.php?year=<?= sanitize($filterYear) ?>&monthnum=<?= sanitize($filterMonthNum) ?>#expenses" class="btn btn-secondary">Cancel</a><?php endif; ?>
+        <?php if ($editExpense): ?><a href="factory-management.php?year=<?= sanitize($filterYear) ?>&monthnum=<?= sanitize($filterMonthNum) ?>&tab=expenses" class="btn btn-secondary">Cancel</a><?php endif; ?>
       </div>
     </form>
   </div>
@@ -935,7 +953,7 @@ require_once __DIR__ . '/includes/header.php';
             <td style="font-size:12px;color:var(--gray-500)"><?= sanitize($ex['notes']) ?: '—' ?></td>
             <td>
               <div style="display:flex;gap:4px;justify-content:flex-end">
-                <a href="factory-management.php?year=<?= sanitize($filterYear) ?>&monthnum=<?= sanitize($filterMonthNum) ?>&edit_expense=<?= $ex['id'] ?>#expenses"
+                <a href="factory-management.php?year=<?= sanitize($filterYear) ?>&monthnum=<?= sanitize($filterMonthNum) ?>&edit_expense=<?= $ex['id'] ?>&tab=expenses"
                    class="btn btn-outline btn-sm" title="Edit"><i class="ti ti-edit"></i></a>
                 <form method="POST" style="display:inline" onsubmit="return confirm('Delete this expense record?')">
                   <input type="hidden" name="action" value="delete_expense">
@@ -967,10 +985,11 @@ require_once __DIR__ . '/includes/header.php';
 </div>
 
 <!-- ══════════════════════ MONTHLY PRICES ══════════════════════ -->
-<div class="fm-panel" id="prices" hidden>
+<div class="fm-panel" id="prices" <?= $activeTab === 'prices' ? '' : 'hidden' ?>>
 
   <div class="card" style="margin-bottom:16px">
-    <form method="GET" action="factory-management.php#prices" style="display:flex;gap:12px;align-items:flex-end">
+    <form method="GET" action="factory-management.php" style="display:flex;gap:12px;align-items:flex-end">
+      <input type="hidden" name="tab" value="prices">
       <div class="form-group" style="margin-bottom:0">
         <label>Year</label>
         <?php $priceYearOpts = fmYearOptions(5, 1); if (!in_array((int)$priceYear, $priceYearOpts)) $priceYearOpts[] = (int)$priceYear; ?>
@@ -1059,19 +1078,30 @@ function fmShowTab(id, el) {
   document.querySelectorAll('.fm-tab').forEach(function(i) { i.classList.remove('active'); });
   if (!el) el = document.querySelector('.fm-tab[href="#' + id + '"]');
   if (el) el.classList.add('active');
-  // Keep the filter form's target (and Reset link) pointed at whichever
-  // tab is currently open, so applying/resetting filters doesn't bounce
-  // you over to a different tab.
-  var filterForm = document.getElementById('fm-filter-form');
-  if (filterForm) filterForm.action = 'factory-management.php#' + id;
+  // Keep the filter form's hidden "tab" field (and Reset link) pointed at
+  // whichever tab is currently open, so applying/resetting filters doesn't
+  // bounce you over to a different tab. Deliberately NOT using a #fragment
+  // for these — a real page reload to a URL with #fragment makes the
+  // browser jump-scroll to that element before our JS un-hides it, which
+  // looked like the page "jumping down". A `tab=` query param instead lets
+  // PHP render the correct panel visible from the first paint.
+  var tabInput = document.getElementById('fm-filter-tab-input');
+  if (tabInput) tabInput.value = id;
   var resetLink = document.getElementById('fm-filter-reset');
-  if (resetLink) resetLink.href = 'factory-management.php#' + id;
+  if (resetLink) resetLink.href = 'factory-management.php?tab=' + id;
   if (history.replaceState) history.replaceState(null, '', '#' + id);
   return false;
 }
 (function() {
   var tabs = ['overview', 'factories', 'deliveries', 'expenses', 'prices'];
-  var id = window.location.hash ? window.location.hash.slice(1) : '';
+  // The server already rendered the correct panel visible based on ?tab=
+  // (see $activeTab in PHP) — this just syncs the nav's active class and
+  // the filter form/reset link to match. Fall back to the #fragment only
+  // for old bookmarks/links that predate the ?tab= param.
+  var id = '<?= $activeTab ?>';
+  if (tabs.indexOf(id) === -1) {
+    id = window.location.hash ? window.location.hash.slice(1) : '';
+  }
   if (tabs.indexOf(id) === -1) id = 'overview';
   fmShowTab(id);
 })();
