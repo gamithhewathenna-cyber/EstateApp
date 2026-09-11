@@ -72,7 +72,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ON DUPLICATE KEY UPDATE price_per_kg=?, updated_at=NOW()",
             [$estateId, $factoryId, $priceMonth, $price, $uid, $price]);
         flash('success', 'Price saved.');
-        redirect('/factory-management.php?pmonth=' . urlencode($monthIn) . '#prices');
+        [$mYear, $mNum] = explode('-', $monthIn);
+        redirect('/factory-management.php?pyear=' . urlencode($mYear) . '&pmonthnum=' . urlencode($mNum) . '#prices');
     }
 
     // ── MONTHLY PRICE: delete one entry ────────────
@@ -89,12 +90,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $weight       = trim($_POST['factory_weight'] ?? '');
         $weight       = ($weight === '') ? null : (float)$weight;
 
-        // Preserve whatever Factory/Month/Date filter was active so saving
+        // Preserve whatever Factory/Year/Month filter was active so saving
         // a row doesn't bounce the page back to the current month.
         $backTo = '/factory-management.php?' . http_build_query(array_filter([
-            'factory' => $_POST['ret_factory'] ?? '',
-            'month'   => $_POST['ret_month']   ?? '',
-            'fdate'   => $_POST['ret_fdate']   ?? '',
+            'factory'  => $_POST['ret_factory']  ?? '',
+            'year'     => $_POST['ret_year']     ?? '',
+            'monthnum' => $_POST['ret_monthnum'] ?? '',
         ], fn($v) => $v !== '')) . '#deliveries';
 
         if (!$deliveryDate) { flash('error', 'Missing delivery date.'); redirect($backTo); }
@@ -107,20 +108,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Months as [value=>'YYYY-MM', label=>'September 2026'], newest first.
-// Used instead of <input type="month"> because that input type isn't
-// reliably supported across browsers (notably older Firefox falls back
-// to a plain text box with no calendar, making past months unpickable).
-function fmMonthOptions($monthsBack = 12, $monthsForward = 0) {
-    $opts = [];
-    $base = strtotime(date('Y-m-01'));
-    // Oldest first, newest last — so the dropdown reads Jan, Feb, Mar... order.
-    for ($i = $monthsBack; $i >= -$monthsForward; $i--) {
-        $ts = strtotime(sprintf('%+d month', -$i), $base);
-        $opts[date('Y-m', $ts)] = date('F Y', $ts);
-    }
-    return $opts;
+// Year + Month pickers instead of <input type="month"> / type="date">,
+// which aren't reliably supported across browsers (notably older Firefox
+// falls back to a plain text box with no calendar). Pick a year first,
+// then a month select shows only that year's Jan–Dec.
+function fmYearOptions($back = 5, $forward = 1) {
+    $curYear = (int)date('Y');
+    $years = [];
+    for ($y = $curYear - $back; $y <= $curYear + $forward; $y++) $years[] = $y;
+    return $years; // ascending, oldest first
 }
+
+$fmMonthNames = [
+    '01' => 'January',  '02' => 'February', '03' => 'March',     '04' => 'April',
+    '05' => 'May',      '06' => 'June',     '07' => 'July',      '08' => 'August',
+    '09' => 'September','10' => 'October',  '11' => 'November',  '12' => 'December',
+];
 
 // ── Check both migrations have been applied before querying ────
 $factoriesReady = true;
@@ -209,19 +212,13 @@ if ($factoriesReady) {
     // Shows every day's total Tea Plucking (KG) for the period — not just
     // days already tied to a factory — so a factory (and weight) can be
     // assigned here too, for days that predate this feature or were missed.
-    $filterFactory = $_GET['factory'] ?? 'all'; // 'all' | 'none' (unassigned) | <factory id>
-    $filterMonth   = $_GET['month']   ?? date('Y-m');
-    $filterDate    = $_GET['fdate']   ?? '';
+    $filterFactory  = $_GET['factory']  ?? 'all'; // 'all' | 'none' (unassigned) | <factory id>
+    $filterYear     = $_GET['year']     ?? date('Y');
+    $filterMonthNum = $_GET['monthnum'] ?? date('m');
+    $filterMonth    = $filterYear . '-' . str_pad($filterMonthNum, 2, '0', STR_PAD_LEFT);
 
-    $dateWhere  = "da.estate_id=? AND LOWER(wt.unit_label)='kg' AND da.approval_status='approved'";
-    $dateParams = [$estateId];
-    if ($filterDate) {
-        $dateWhere   .= " AND da.assignment_date=?";
-        $dateParams[] = $filterDate;
-    } elseif ($filterMonth) {
-        $dateWhere   .= " AND DATE_FORMAT(da.assignment_date,'%Y-%m')=?";
-        $dateParams[] = $filterMonth;
-    }
+    $dateWhere  = "da.estate_id=? AND LOWER(wt.unit_label)='kg' AND da.approval_status='approved' AND DATE_FORMAT(da.assignment_date,'%Y-%m')=?";
+    $dateParams = [$estateId, $filterMonth];
 
     $factoryWhere  = '';
     $factoryParams = [];
@@ -256,7 +253,9 @@ if ($factoriesReady) {
     }, $deliveries));
 
     // ── MONTHLY PRICES TAB ──
-    $priceMonthSel  = $_GET['pmonth'] ?? date('Y-m');
+    $priceYear      = $_GET['pyear']  ?? date('Y');
+    $priceMonthNum  = $_GET['pmonthnum'] ?? date('m');
+    $priceMonthSel  = $priceYear . '-' . str_pad($priceMonthNum, 2, '0', STR_PAD_LEFT);
     $priceMonthDate = $priceMonthSel . '-01';
     $pricesThisMonth = DB::fetchAll("SELECT * FROM factory_prices WHERE estate_id=? AND price_month=?", [$estateId, $priceMonthDate]);
     $priceMap        = array_column($pricesThisMonth, null, 'factory_id');
@@ -378,17 +377,21 @@ require_once __DIR__ . '/includes/header.php';
         </select>
       </div>
       <div class="form-group">
-        <label>Month</label>
-        <?php $monthOpts = fmMonthOptions(12); if (!isset($monthOpts[$filterMonth])) $monthOpts[$filterMonth] = date('F Y', strtotime($filterMonth . '-01')); ?>
-        <select name="month">
-          <?php foreach ($monthOpts as $mVal => $mLabel): ?>
-          <option value="<?= $mVal ?>" <?= (!$filterDate && $filterMonth === $mVal) ? 'selected' : '' ?>><?= $mLabel ?></option>
+        <label>Year</label>
+        <?php $yearOpts = fmYearOptions(5, 1); if (!in_array((int)$filterYear, $yearOpts)) $yearOpts[] = (int)$filterYear; ?>
+        <select name="year">
+          <?php foreach ($yearOpts as $y): ?>
+          <option value="<?= $y ?>" <?= (int)$filterYear === $y ? 'selected' : '' ?>><?= $y ?></option>
           <?php endforeach; ?>
         </select>
       </div>
       <div class="form-group">
-        <label>Specific Date (optional)</label>
-        <input type="date" name="fdate" value="<?= sanitize($filterDate) ?>">
+        <label>Month</label>
+        <select name="monthnum">
+          <?php foreach ($fmMonthNames as $mNum => $mLabel): ?>
+          <option value="<?= $mNum ?>" <?= $filterMonthNum === $mNum ? 'selected' : '' ?>><?= $mLabel ?></option>
+          <?php endforeach; ?>
+        </select>
       </div>
       <button type="submit" class="btn btn-primary"><i class="ti ti-filter"></i> Apply Filters</button>
       <a href="factory-management.php#deliveries" class="btn btn-secondary">Reset</a>
@@ -677,8 +680,8 @@ require_once __DIR__ . '/includes/header.php';
                 <input type="hidden" name="action" value="update_delivery">
                 <input type="hidden" name="delivery_date" value="<?= $d['assignment_date'] ?>">
                 <input type="hidden" name="ret_factory" value="<?= sanitize($filterFactory) ?>">
-                <input type="hidden" name="ret_month" value="<?= sanitize($filterMonth) ?>">
-                <input type="hidden" name="ret_fdate" value="<?= sanitize($filterDate) ?>">
+                <input type="hidden" name="ret_year" value="<?= sanitize($filterYear) ?>">
+                <input type="hidden" name="ret_monthnum" value="<?= sanitize($filterMonthNum) ?>">
                 <select name="factory_id" style="font-size:12px;padding:5px 8px;border:1px solid #d8ddd5;border-radius:6px">
                   <option value="">— Unassigned —</option>
                   <?php foreach ($factories as $f): ?>
@@ -713,11 +716,19 @@ require_once __DIR__ . '/includes/header.php';
   <div class="card" style="margin-bottom:16px">
     <form method="GET" action="factory-management.php#prices" style="display:flex;gap:12px;align-items:flex-end">
       <div class="form-group" style="margin-bottom:0">
+        <label>Year</label>
+        <?php $priceYearOpts = fmYearOptions(5, 1); if (!in_array((int)$priceYear, $priceYearOpts)) $priceYearOpts[] = (int)$priceYear; ?>
+        <select name="pyear">
+          <?php foreach ($priceYearOpts as $y): ?>
+          <option value="<?= $y ?>" <?= (int)$priceYear === $y ? 'selected' : '' ?>><?= $y ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
         <label>Month</label>
-        <?php $priceMonthOpts = fmMonthOptions(12, 2); if (!isset($priceMonthOpts[$priceMonthSel])) $priceMonthOpts[$priceMonthSel] = date('F Y', strtotime($priceMonthSel . '-01')); ?>
-        <select name="pmonth">
-          <?php foreach ($priceMonthOpts as $mVal => $mLabel): ?>
-          <option value="<?= $mVal ?>" <?= $priceMonthSel === $mVal ? 'selected' : '' ?>><?= $mLabel ?></option>
+        <select name="pmonthnum">
+          <?php foreach ($fmMonthNames as $mNum => $mLabel): ?>
+          <option value="<?= $mNum ?>" <?= $priceMonthNum === $mNum ? 'selected' : '' ?>><?= $mLabel ?></option>
           <?php endforeach; ?>
         </select>
       </div>
