@@ -248,7 +248,7 @@ tbody tr:hover td { background: #f8faf5; }
 .report-actions { display: flex; gap: 6px; margin-left: auto; }
 
 /* ---- MODAL ---- */
-.modal-overlay { display: flex; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 500; align-items: center; justify-content: center; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .2s ease, visibility .2s; }
+.modal-overlay { display: flex; position: fixed; inset: 0; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 500; align-items: center; justify-content: center; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .2s ease, visibility .2s; }
 .modal-overlay.open { opacity: 1; visibility: visible; pointer-events: auto; }
 .modal-box { background: #fff; border-radius: var(--radius-lg); padding: 24px; width: 480px; max-width: 95vw; max-height: 90vh; overflow-y: auto; transform: translateY(-12px) scale(.98); transition: transform .2s ease; }
 .modal-overlay.open .modal-box { transform: translateY(0) scale(1); }
