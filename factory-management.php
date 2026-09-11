@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ── FACTORY: delete (only if never used in a delivery) ──
     if ($action === 'delete_factory') {
         $id   = (int)($_POST['id'] ?? 0);
-        $used = DB::fetchOne("SELECT COUNT(*) as cnt FROM daily_assignments WHERE factory_id=? AND estate_id=?", [$id, $estateId]);
+        $used = DB::fetchOne("SELECT COUNT(*) as cnt FROM factory_deliveries WHERE factory_id=? AND estate_id=?", [$id, $estateId]);
         if (($used['cnt'] ?? 0) > 0) {
             flash('error', 'Cannot delete — this factory has ' . $used['cnt'] . ' delivery record(s). Deactivate it instead.');
             redirect('/factory-management.php#factories');
@@ -82,14 +82,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('/factory-management.php#prices');
     }
 
-    // ── DELIVERY: assign factory and/or confirm weight ─
+    // ── DELIVERY: assign factory and/or confirm weight for a whole day ──
     if ($action === 'update_delivery') {
-        $id        = (int)($_POST['id'] ?? 0);
-        $factoryId = (int)($_POST['factory_id'] ?? 0) ?: null;
-        $weight    = trim($_POST['factory_weight'] ?? '');
-        $weight    = ($weight === '') ? null : (float)$weight;
-        DB::execute("UPDATE daily_assignments SET factory_id=?, factory_weight=? WHERE id=? AND estate_id=?",
-            [$factoryId, $weight, $id, $estateId]);
+        $deliveryDate = $_POST['delivery_date'] ?? '';
+        $factoryId    = (int)($_POST['factory_id'] ?? 0) ?: null;
+        $weight       = trim($_POST['factory_weight'] ?? '');
+        $weight       = ($weight === '') ? null : (float)$weight;
+        if (!$deliveryDate) { flash('error', 'Missing delivery date.'); redirect('/factory-management.php#deliveries'); }
+        DB::execute("INSERT INTO factory_deliveries (estate_id, delivery_date, factory_id, factory_weight, created_by)
+            VALUES (?,?,?,?,?)
+            ON DUPLICATE KEY UPDATE factory_id=VALUES(factory_id), factory_weight=VALUES(factory_weight), updated_at=NOW()",
+            [$estateId, $deliveryDate, $factoryId, $weight, $uid]);
         flash('success', 'Delivery updated.');
         redirect('/factory-management.php#deliveries');
     }
@@ -110,10 +113,11 @@ function fmMonthOptions($monthsBack = 12, $monthsForward = 0) {
     return $opts;
 }
 
-// ── Check the migration has been applied before querying ──────
+// ── Check both migrations have been applied before querying ────
 $factoriesReady = true;
 try {
     DB::fetchOne("SELECT 1 FROM factories LIMIT 1", []);
+    DB::fetchOne("SELECT 1 FROM factory_deliveries LIMIT 1", []);
 } catch (Exception $e) {
     $factoriesReady = false;
 }
@@ -130,91 +134,112 @@ if ($factoriesReady) {
     $curPrices   = DB::fetchAll("SELECT factory_id, price_per_kg FROM factory_prices WHERE estate_id=? AND price_month=?", [$estateId, $curMonth]);
     $curPriceMap = array_column($curPrices, 'price_per_kg', 'factory_id');
 
+    // Daily plucking totals (whole estate, all workers/sections combined —
+    // one number per day) with whatever factory has been assigned to that
+    // day, if any. This is the base dataset for Overview + Deliveries.
+    $thisMonthDaily = DB::fetchAll("SELECT dk.assignment_date, dk.total_kg,
+            fd.factory_id, fd.factory_weight, f.name as factory_name, fp.price_per_kg
+        FROM (
+            SELECT da.assignment_date, SUM(da.quantity) as total_kg
+            FROM daily_assignments da
+            JOIN work_types wt ON da.work_type_id=wt.id
+            WHERE da.estate_id=? AND LOWER(wt.unit_label)='kg' AND da.approval_status='approved'
+              AND da.assignment_date >= ? AND da.assignment_date < DATE_ADD(?, INTERVAL 1 MONTH)
+            GROUP BY da.assignment_date
+        ) dk
+        LEFT JOIN factory_deliveries fd ON fd.estate_id=? AND fd.delivery_date=dk.assignment_date
+        LEFT JOIN factories f ON fd.factory_id=f.id
+        LEFT JOIN factory_prices fp ON fp.factory_id=fd.factory_id AND fp.price_month=DATE_FORMAT(dk.assignment_date,'%Y-%m-01')
+        ORDER BY dk.assignment_date DESC", [$estateId, $curMonth, $curMonth, $estateId]);
+
     // Per-factory this-month totals (based on confirmed factory weight only)
-    $factoryMonthStats = DB::fetchAll("SELECT factory_id,
-            COALESCE(SUM(factory_weight),0) as total_kg,
-            COUNT(*) as delivery_count
-        FROM daily_assignments
-        WHERE estate_id=? AND factory_id IS NOT NULL AND factory_weight IS NOT NULL
-          AND assignment_date >= ? AND assignment_date < DATE_ADD(?, INTERVAL 1 MONTH)
-        GROUP BY factory_id", [$estateId, $curMonth, $curMonth]);
     $factoryMonthMap = [];
-    foreach ($factoryMonthStats as $row) {
-        $price = (float)($curPriceMap[$row['factory_id']] ?? 0);
-        $factoryMonthMap[$row['factory_id']] = [
-            'kg'    => (float)$row['total_kg'],
-            'count' => (int)$row['delivery_count'],
-            'value' => (float)$row['total_kg'] * $price,
-        ];
+    foreach ($thisMonthDaily as $row) {
+        if (empty($row['factory_id'])) continue;
+        $fid = $row['factory_id'];
+        if (!isset($factoryMonthMap[$fid])) $factoryMonthMap[$fid] = ['kg' => 0.0, 'count' => 0, 'value' => 0.0];
+        $factoryMonthMap[$fid]['count']++;
+        if ($row['factory_weight'] !== null) {
+            $factoryMonthMap[$fid]['kg'] += (float)$row['factory_weight'];
+            if ($row['price_per_kg'] !== null) {
+                $factoryMonthMap[$fid]['value'] += (float)$row['factory_weight'] * (float)$row['price_per_kg'];
+            }
+        }
     }
 
     // ── OVERVIEW STATS (this month) ──
-    $ovTotalWeight       = array_sum(array_column($factoryMonthMap, 'kg'));
-    $ovTotalValue        = array_sum(array_column($factoryMonthMap, 'value'));
-    $ovDeliveries        = DB::fetchOne("SELECT COUNT(*) as cnt FROM daily_assignments
-        WHERE estate_id=? AND factory_id IS NOT NULL AND assignment_date >= ? AND assignment_date < DATE_ADD(?, INTERVAL 1 MONTH)",
-        [$estateId, $curMonth, $curMonth])['cnt'] ?? 0;
-    $ovActiveFactories   = count(array_filter($factories, fn($f) => $f['is_active'] == 1));
-    $ovMaxFactoryShare   = max(array_column($factoryMonthMap, 'kg') ?: [1]);
+    $ovTotalWeight     = array_sum(array_column($factoryMonthMap, 'kg'));
+    $ovTotalValue      = array_sum(array_column($factoryMonthMap, 'value'));
+    $ovDeliveries      = count(array_filter($thisMonthDaily, fn($r) => !empty($r['factory_id'])));
+    $ovActiveFactories = count(array_filter($factories, fn($f) => $f['is_active'] == 1));
 
-    // Daily factory-weight trend this month (for the mini chart)
-    $dailyFactoryKg = DB::fetchAll("SELECT assignment_date, COALESCE(SUM(factory_weight),0) as kg
-        FROM daily_assignments
-        WHERE estate_id=? AND factory_id IS NOT NULL AND factory_weight IS NOT NULL
-          AND assignment_date >= ? AND assignment_date < DATE_ADD(?, INTERVAL 1 MONTH)
-        GROUP BY assignment_date ORDER BY assignment_date", [$estateId, $curMonth, $curMonth]);
+    // Daily factory-weight trend this month (for the mini chart), oldest first
+    $dailyFactoryKg = [];
+    foreach (array_reverse($thisMonthDaily) as $row) {
+        if ($row['factory_weight'] !== null) {
+            $dailyFactoryKg[] = ['assignment_date' => $row['assignment_date'], 'kg' => (float)$row['factory_weight']];
+        }
+    }
     $maxDailyFactoryKg = max(array_column($dailyFactoryKg, 'kg') ?: [1]);
 
-    // Recent deliveries (last 10, any factory)
-    $recentDeliveries = DB::fetchAll("SELECT da.*,
-            COALESCE(w.full_name, TRIM(REPLACE(SUBSTRING_INDEX(IFNULL(da.notes,''),'|',1),'TEMP:',''))) as full_name,
-            f.name as factory_name
-        FROM daily_assignments da
-        LEFT JOIN workers w ON da.worker_id=w.id
-        JOIN factories f ON da.factory_id=f.id
-        WHERE da.estate_id=? AND da.factory_id IS NOT NULL
-        ORDER BY da.assignment_date DESC, da.id DESC LIMIT 10", [$estateId]);
+    // Recent deliveries (last 10 days that have a factory assigned, any month)
+    $recentDeliveries = DB::fetchAll("SELECT dk.assignment_date, dk.total_kg,
+            fd.factory_weight, f.name as factory_name
+        FROM (
+            SELECT da.assignment_date, SUM(da.quantity) as total_kg
+            FROM daily_assignments da
+            JOIN work_types wt ON da.work_type_id=wt.id
+            WHERE da.estate_id=? AND LOWER(wt.unit_label)='kg' AND da.approval_status='approved'
+            GROUP BY da.assignment_date
+        ) dk
+        JOIN factory_deliveries fd ON fd.estate_id=? AND fd.delivery_date=dk.assignment_date AND fd.factory_id IS NOT NULL
+        JOIN factories f ON fd.factory_id=f.id
+        ORDER BY dk.assignment_date DESC LIMIT 10", [$estateId, $estateId]);
 
     // ── DELIVERIES TAB: filters ──
-    // Shows every Tea Plucking (KG) record for the period — not just ones
-    // already tied to a factory — so a factory (and weight) can be assigned
-    // here too. Records created before this feature, or without a factory
-    // picked on the assignment form, would otherwise never appear anywhere.
+    // Shows every day's total Tea Plucking (KG) for the period — not just
+    // days already tied to a factory — so a factory (and weight) can be
+    // assigned here too, for days that predate this feature or were missed.
     $filterFactory = $_GET['factory'] ?? 'all'; // 'all' | 'none' (unassigned) | <factory id>
     $filterMonth   = $_GET['month']   ?? date('Y-m');
     $filterDate    = $_GET['fdate']   ?? '';
 
-    $where  = "da.estate_id=? AND LOWER(wt.unit_label)='kg' AND da.approval_status='approved'";
-    $params = [$estateId];
-    if ($filterFactory === 'none') {
-        $where .= " AND da.factory_id IS NULL";
-    } elseif ($filterFactory !== 'all' && (int)$filterFactory > 0) {
-        $where   .= " AND da.factory_id=?";
-        $params[] = (int)$filterFactory;
-    }
+    $dateWhere  = "da.estate_id=? AND LOWER(wt.unit_label)='kg' AND da.approval_status='approved'";
+    $dateParams = [$estateId];
     if ($filterDate) {
-        $where   .= " AND da.assignment_date=?";
-        $params[] = $filterDate;
+        $dateWhere   .= " AND da.assignment_date=?";
+        $dateParams[] = $filterDate;
     } elseif ($filterMonth) {
-        $where   .= " AND DATE_FORMAT(da.assignment_date,'%Y-%m')=?";
-        $params[] = $filterMonth;
+        $dateWhere   .= " AND DATE_FORMAT(da.assignment_date,'%Y-%m')=?";
+        $dateParams[] = $filterMonth;
     }
 
-    $deliveries = DB::fetchAll("SELECT da.*,
-            COALESCE(w.full_name, TRIM(REPLACE(SUBSTRING_INDEX(IFNULL(da.notes,''),'|',1),'TEMP:',''))) as full_name,
-            p.name as plantation_name,
-            f.name as factory_name,
-            fp.price_per_kg as price_per_kg
-        FROM daily_assignments da
-        LEFT JOIN workers w ON da.worker_id=w.id
-        JOIN plantations p ON da.plantation_id=p.id
-        JOIN work_types wt ON da.work_type_id=wt.id
-        LEFT JOIN factories f ON da.factory_id=f.id
-        LEFT JOIN factory_prices fp ON fp.factory_id=da.factory_id AND fp.price_month = DATE_FORMAT(da.assignment_date,'%Y-%m-01')
-        WHERE $where
-        ORDER BY da.assignment_date DESC, da.id DESC", $params);
+    $factoryWhere  = '';
+    $factoryParams = [];
+    if ($filterFactory === 'none') {
+        $factoryWhere = "WHERE fd.factory_id IS NULL";
+    } elseif ($filterFactory !== 'all' && (int)$filterFactory > 0) {
+        $factoryWhere    = "WHERE fd.factory_id=?";
+        $factoryParams[] = (int)$filterFactory;
+    }
 
-    $delivTotalPluck     = array_sum(array_column($deliveries, 'quantity'));
+    $deliveries = DB::fetchAll("SELECT dk.assignment_date, dk.total_kg,
+            fd.factory_id, fd.factory_weight, f.name as factory_name, fp.price_per_kg
+        FROM (
+            SELECT da.assignment_date, SUM(da.quantity) as total_kg
+            FROM daily_assignments da
+            JOIN work_types wt ON da.work_type_id=wt.id
+            WHERE $dateWhere
+            GROUP BY da.assignment_date
+        ) dk
+        LEFT JOIN factory_deliveries fd ON fd.estate_id=? AND fd.delivery_date=dk.assignment_date
+        LEFT JOIN factories f ON fd.factory_id=f.id
+        LEFT JOIN factory_prices fp ON fp.factory_id=fd.factory_id AND fp.price_month=DATE_FORMAT(dk.assignment_date,'%Y-%m-01')
+        $factoryWhere
+        ORDER BY dk.assignment_date DESC",
+        array_merge($dateParams, [$estateId], $factoryParams));
+
+    $delivTotalPluck     = array_sum(array_column($deliveries, 'total_kg'));
     $delivTotalFactoryKg = array_sum(array_map(fn($d) => $d['factory_weight'] !== null ? (float)$d['factory_weight'] : 0, $deliveries));
     $delivTotalValue     = array_sum(array_map(function ($d) {
         if ($d['factory_weight'] === null || $d['price_per_kg'] === null) return 0;
@@ -241,6 +266,7 @@ require_once __DIR__ . '/includes/header.php';
   <p style="font-size:13px;color:var(--red-600);margin-top:8px">
     The Factory Management database tables haven't been created yet. Ask your administrator to run
     <code style="background:#fff;padding:2px 6px;border-radius:4px">install/migration_factory_management.sql</code>
+    and <code style="background:#fff;padding:2px 6px;border-radius:4px">install/migration_factory_deliveries_daily.sql</code>
     against the database (e.g. via phpMyAdmin), then reload this page.
   </p>
 </div>
@@ -440,20 +466,19 @@ require_once __DIR__ . '/includes/header.php';
       <table>
         <thead>
           <tr>
-            <th>Date</th><th>Factory</th><th>Worker / Section</th>
+            <th>Date</th><th>Factory</th>
             <th style="text-align:right">Plucking (KG)</th><th style="text-align:right">Factory (KG)</th>
             <th style="text-align:right">Difference</th><th>Status</th>
           </tr>
         </thead>
         <tbody>
           <?php foreach ($recentDeliveries as $r):
-            $diff = $r['factory_weight'] !== null ? ((float)$r['quantity'] - (float)$r['factory_weight']) : null;
+            $diff = $r['factory_weight'] !== null ? ((float)$r['total_kg'] - (float)$r['factory_weight']) : null;
           ?>
           <tr>
             <td><?= fmtDate($r['assignment_date']) ?></td>
             <td><?= sanitize($r['factory_name']) ?></td>
-            <td><?= sanitize($r['full_name']) ?></td>
-            <td style="text-align:right"><?= number_format($r['quantity'], 1) ?></td>
+            <td style="text-align:right"><?= number_format($r['total_kg'], 1) ?></td>
             <td style="text-align:right"><?= $r['factory_weight'] !== null ? number_format($r['factory_weight'], 1) : '—' ?></td>
             <td style="text-align:right" class="<?= $diff === null ? '' : ($diff > 0 ? 'fm-diff-neg' : ($diff < 0 ? 'fm-diff-pos' : '')) ?>">
               <?= $diff === null ? '—' : number_format($diff, 1) ?>
@@ -462,7 +487,7 @@ require_once __DIR__ . '/includes/header.php';
           </tr>
           <?php endforeach; ?>
           <?php if (!$recentDeliveries): ?>
-          <tr><td colspan="7"><div class="empty-state"><i class="ti ti-truck-delivery"></i><p>No factory deliveries recorded yet</p></div></td></tr>
+          <tr><td colspan="6"><div class="empty-state"><i class="ti ti-truck-delivery"></i><p>No factory deliveries recorded yet</p></div></td></tr>
           <?php endif; ?>
         </tbody>
       </table>
@@ -618,8 +643,9 @@ require_once __DIR__ . '/includes/header.php';
       <table>
         <thead>
           <tr>
-            <th>Date</th><th colspan="2">Factory / Confirm Weight (KG)</th><th>Section</th><th>Worker</th>
+            <th>Date</th>
             <th style="text-align:right">Plucking (KG)</th>
+            <th colspan="2">Factory / Confirm Weight (KG)</th>
             <th style="text-align:right">Difference</th>
             <th style="text-align:right">Price/KG</th>
             <th style="text-align:right">Value</th>
@@ -628,7 +654,7 @@ require_once __DIR__ . '/includes/header.php';
         </thead>
         <tbody>
           <?php foreach ($deliveries as $d):
-            $diff   = $d['factory_weight'] !== null ? ((float)$d['quantity'] - (float)$d['factory_weight']) : null;
+            $diff   = $d['factory_weight'] !== null ? ((float)$d['total_kg'] - (float)$d['factory_weight']) : null;
             $value  = ($d['factory_weight'] !== null && $d['price_per_kg'] !== null) ? (float)$d['factory_weight'] * (float)$d['price_per_kg'] : null;
             $status = $d['factory_id'] === null ? 'unassigned' : ($d['factory_weight'] !== null ? 'received' : 'pending');
             $statusLabel = ['unassigned' => 'Unassigned', 'pending' => 'Pending', 'received' => 'Received'][$status];
@@ -636,10 +662,11 @@ require_once __DIR__ . '/includes/header.php';
           ?>
           <tr>
             <td><?= fmtDate($d['assignment_date']) ?></td>
+            <td style="text-align:right"><?= number_format($d['total_kg'], 1) ?></td>
             <td colspan="2">
               <form method="POST" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
                 <input type="hidden" name="action" value="update_delivery">
-                <input type="hidden" name="id" value="<?= $d['id'] ?>">
+                <input type="hidden" name="delivery_date" value="<?= $d['assignment_date'] ?>">
                 <select name="factory_id" style="font-size:12px;padding:5px 8px;border:1px solid #d8ddd5;border-radius:6px">
                   <option value="">— Unassigned —</option>
                   <?php foreach ($factories as $f): ?>
@@ -651,9 +678,6 @@ require_once __DIR__ . '/includes/header.php';
                 <button type="submit" class="btn btn-outline btn-sm" title="Save"><i class="ti ti-check"></i></button>
               </form>
             </td>
-            <td><?= sanitize($d['plantation_name']) ?></td>
-            <td><?= sanitize($d['full_name']) ?></td>
-            <td style="text-align:right"><?= number_format($d['quantity'], 1) ?></td>
             <td style="text-align:right" class="<?= $diff === null ? '' : ($diff > 0 ? 'fm-diff-neg' : ($diff < 0 ? 'fm-diff-pos' : '')) ?>">
               <?= $diff === null ? '—' : number_format($diff, 1) ?>
             </td>
@@ -663,7 +687,7 @@ require_once __DIR__ . '/includes/header.php';
           </tr>
           <?php endforeach; ?>
           <?php if (!$deliveries): ?>
-          <tr><td colspan="10"><div class="empty-state"><i class="ti ti-truck-delivery"></i><p>No plucking records match these filters</p></div></td></tr>
+          <tr><td colspan="8"><div class="empty-state"><i class="ti ti-truck-delivery"></i><p>No plucking days match these filters</p></div></td></tr>
           <?php endif; ?>
         </tbody>
       </table>
