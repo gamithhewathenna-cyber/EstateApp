@@ -239,25 +239,38 @@ require_once __DIR__ . '/includes/header.php';
 <?php endif; ?>
 
 <style>
+.fm-nav-wrap {
+  background: #fff;
+  border: 1px solid #e8ede5;
+  border-radius: var(--radius-lg);
+  margin-bottom: 20px;
+  position: sticky;
+  top: 80px;
+  z-index: 5;
+  overflow: hidden;
+}
 .fm-nav {
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   align-items: center;
   gap: 2px;
-  background: #fff;
-  border: 1px solid #e8ede5;
-  border-radius: var(--radius-lg);
   padding: 6px;
-  margin-bottom: 20px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  position: sticky;
-  top: 80px;
-  z-index: 5;
 }
 .fm-nav::-webkit-scrollbar { display: none; }
+.fm-filter-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border-top: 1px solid #f0f0eb;
+  background: var(--gray-50);
+}
+.fm-filter-bar .form-group { margin-bottom: 0; }
 .fm-tab {
   display: flex;
   align-items: center;
@@ -290,20 +303,52 @@ require_once __DIR__ . '/includes/header.php';
 }
 </style>
 
-<!-- HORIZONTAL TABS -->
-<div class="fm-nav">
-  <a href="#overview"   class="fm-tab active" onclick="return fmShowTab('overview',this)">
-    <i class="ti ti-layout-dashboard"></i><span> Overview</span>
-  </a>
-  <a href="#factories"  class="fm-tab" onclick="return fmShowTab('factories',this)">
-    <i class="ti ti-building-factory-2"></i><span> Factories</span>
-  </a>
-  <a href="#deliveries" class="fm-tab" onclick="return fmShowTab('deliveries',this)">
-    <i class="ti ti-truck-delivery"></i><span> Deliveries</span>
-  </a>
-  <a href="#prices"     class="fm-tab" onclick="return fmShowTab('prices',this)">
-    <i class="ti ti-tag"></i><span> Monthly Prices</span>
-  </a>
+<!-- STICKY HEADER: TABS + (on Deliveries) FILTERS -->
+<div class="fm-nav-wrap">
+  <div class="fm-nav">
+    <a href="#overview"   class="fm-tab active" onclick="return fmShowTab('overview',this)">
+      <i class="ti ti-layout-dashboard"></i><span> Overview</span>
+    </a>
+    <a href="#factories"  class="fm-tab" onclick="return fmShowTab('factories',this)">
+      <i class="ti ti-building-factory-2"></i><span> Factories</span>
+    </a>
+    <a href="#deliveries" class="fm-tab" onclick="return fmShowTab('deliveries',this)">
+      <i class="ti ti-truck-delivery"></i><span> Deliveries</span>
+    </a>
+    <a href="#prices"     class="fm-tab" onclick="return fmShowTab('prices',this)">
+      <i class="ti ti-tag"></i><span> Monthly Prices</span>
+    </a>
+  </div>
+
+  <!-- Deliveries filters — live in the header so they're always visible and never covered while scrolling -->
+  <div class="fm-filter-bar" id="fm-deliv-filters" hidden>
+    <form method="GET" action="factory-management.php#deliveries" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+      <div class="form-group" style="min-width:180px">
+        <label>Factory</label>
+        <select name="factory">
+          <option value="all" <?= $filterFactory === 'all' ? 'selected' : '' ?>>All Factories</option>
+          <?php foreach ($factories as $f): ?>
+          <option value="<?= $f['id'] ?>" <?= (string)$filterFactory === (string)$f['id'] ? 'selected' : '' ?>><?= sanitize($f['name']) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Month</label>
+        <?php $monthOpts = fmMonthOptions(12); if (!isset($monthOpts[$filterMonth])) $monthOpts[$filterMonth] = date('F Y', strtotime($filterMonth . '-01')); ?>
+        <select name="month">
+          <?php foreach ($monthOpts as $mVal => $mLabel): ?>
+          <option value="<?= $mVal ?>" <?= (!$filterDate && $filterMonth === $mVal) ? 'selected' : '' ?>><?= $mLabel ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Specific Date (optional)</label>
+        <input type="date" name="fdate" value="<?= sanitize($filterDate) ?>">
+      </div>
+      <button type="submit" class="btn btn-primary"><i class="ti ti-filter"></i> Apply Filters</button>
+      <a href="factory-management.php#deliveries" class="btn btn-secondary">Reset</a>
+    </form>
+  </div>
 </div>
 
 <!-- ══════════════════════ OVERVIEW ══════════════════════ -->
@@ -539,35 +584,6 @@ require_once __DIR__ . '/includes/header.php';
 <!-- ══════════════════════ DELIVERIES ══════════════════════ -->
 <div class="fm-panel" id="deliveries" hidden>
 
-  <div class="card" style="margin-bottom:16px">
-    <form method="GET" action="factory-management.php#deliveries" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
-      <div class="form-group" style="margin-bottom:0;min-width:180px">
-        <label>Factory</label>
-        <select name="factory">
-          <option value="all" <?= $filterFactory === 'all' ? 'selected' : '' ?>>All Factories</option>
-          <?php foreach ($factories as $f): ?>
-          <option value="<?= $f['id'] ?>" <?= (string)$filterFactory === (string)$f['id'] ? 'selected' : '' ?>><?= sanitize($f['name']) ?></option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label>Month</label>
-        <?php $monthOpts = fmMonthOptions(12); if (!isset($monthOpts[$filterMonth])) $monthOpts[$filterMonth] = date('F Y', strtotime($filterMonth . '-01')); ?>
-        <select name="month">
-          <?php foreach ($monthOpts as $mVal => $mLabel): ?>
-          <option value="<?= $mVal ?>" <?= (!$filterDate && $filterMonth === $mVal) ? 'selected' : '' ?>><?= $mLabel ?></option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label>Specific Date (optional)</label>
-        <input type="date" name="fdate" value="<?= sanitize($filterDate) ?>">
-      </div>
-      <button type="submit" class="btn btn-primary"><i class="ti ti-filter"></i> Apply Filters</button>
-      <a href="factory-management.php#deliveries" class="btn btn-secondary">Reset</a>
-    </form>
-  </div>
-
   <div class="stats-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px">
     <div class="stat-card teal">
       <div class="stat-label"><i class="ti ti-leaf"></i> Total Plucking Weight</div>
@@ -718,6 +734,8 @@ function fmShowTab(id, el) {
   document.querySelectorAll('.fm-tab').forEach(function(i) { i.classList.remove('active'); });
   if (!el) el = document.querySelector('.fm-tab[href="#' + id + '"]');
   if (el) el.classList.add('active');
+  var delivFilters = document.getElementById('fm-deliv-filters');
+  if (delivFilters) delivFilters.hidden = (id !== 'deliveries');
   if (history.replaceState) history.replaceState(null, '', '#' + id);
   return false;
 }
