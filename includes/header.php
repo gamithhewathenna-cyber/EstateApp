@@ -13,11 +13,11 @@ $nav = [
     ['key'=>'fertilizer',  'label'=>'Fertilizer Cycles',   'icon'=>'ti-droplet',          'roles'=>['admin']],
     ['key'=>'clearing',    'label'=>'Clearing Cycles',     'icon'=>'ti-scissors',         'roles'=>['admin']],
     ['key'=>'plantations', 'label'=>'Plantation Sections', 'icon'=>'ti-trees',            'roles'=>['admin']],
+    ['key'=>'estates',        'label'=>'Manage Estates',       'icon'=>'ti-trees',            'roles'=>['admin']],
     ['key'=>'reports',        'label'=>'Reports',             'icon'=>'ti-chart-bar',        'roles'=>['admin']],
     ['key'=>'users',          'label'=>'User Management',     'icon'=>'ti-shield-lock',      'roles'=>['admin']],
     ['key'=>'settings',       'label'=>'Settings',            'icon'=>'ti-settings',         'roles'=>['admin']],
     // Hidden for now — re-enable by uncommenting: ['key'=>'tv-dashboard', 'label'=>'TV Dashboard', 'icon'=>'ti-device-tv', 'roles'=>['admin']],
-    ['key'=>'estates',        'label'=>'Manage Estates',       'icon'=>'ti-trees',            'roles'=>['admin']],
 ];
 
 // ── ESTATE CONTEXT ──────────────────────────
