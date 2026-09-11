@@ -65,6 +65,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $expMonthNum     = trim($_POST['expense_month_num']  ?? date('m'));
         $expenseDate     = $_POST['expense_date'] ?? today();
         $category        = trim($_POST['category'] ?? 'Miscellaneous');
+        if ($category === 'Other') {
+            $categoryOther = trim($_POST['category_other'] ?? '');
+            if ($categoryOther !== '') $category = $categoryOther;
+        }
         $description     = trim($_POST['description'] ?? '');
         $amount          = (float)($_POST['amount'] ?? 0);
         $notes           = trim($_POST['notes'] ?? '');
@@ -181,7 +185,7 @@ try {
 }
 
 // Preset expense categories (Other allows free text via the description field)
-$fmExpenseCategories = ['Fertilizer', 'Chemicals', 'Transport', 'Repairs & Maintenance', 'Equipment', 'Labour', 'Miscellaneous'];
+$fmExpenseCategories = ['Fertilizer', 'Chemicals', 'Transport', 'Repairs & Maintenance', 'Equipment', 'Labour', 'Miscellaneous', 'Other'];
 
 if ($factoriesReady) {
     $editFactory = null;
@@ -864,13 +868,22 @@ require_once __DIR__ . '/includes/header.php';
             </select>
           </div>
         </div>
+        <?php
+          $expKnownCats = array_diff($fmExpenseCategories, ['Other']);
+          $expIsCustomCat = $editExpense && !in_array($editExpense['category'], $expKnownCats, true);
+        ?>
         <div class="form-group">
           <label>Expense Type / Category *</label>
-          <select name="category" required>
+          <select name="category" id="exp-category" required onchange="fmToggleExpenseOther(this)">
             <?php foreach ($fmExpenseCategories as $cat): ?>
-            <option value="<?= sanitize($cat) ?>" <?= ($editExpense && $editExpense['category'] === $cat) ? 'selected' : '' ?>><?= sanitize($cat) ?></option>
+            <option value="<?= sanitize($cat) ?>" <?= (($editExpense && $editExpense['category'] === $cat) || ($cat === 'Other' && $expIsCustomCat)) ? 'selected' : '' ?>><?= sanitize($cat) ?></option>
             <?php endforeach; ?>
           </select>
+        </div>
+        <div class="form-group" id="exp-other-wrap" style="<?= $expIsCustomCat ? '' : 'display:none' ?>">
+          <label>Specify Category *</label>
+          <input type="text" name="category_other" placeholder="e.g. Diesel, Packaging..."
+                 value="<?= $expIsCustomCat ? sanitize($editExpense['category']) : '' ?>">
         </div>
         <div class="form-group">
           <label>Date *</label>
@@ -1036,6 +1049,11 @@ require_once __DIR__ . '/includes/header.php';
 </div>
 
 <script>
+function fmToggleExpenseOther(sel) {
+  var wrap = document.getElementById('exp-other-wrap');
+  if (wrap) wrap.style.display = (sel.value === 'Other') ? 'block' : 'none';
+}
+
 function fmShowTab(id, el) {
   document.querySelectorAll('.fm-panel').forEach(function(s) { s.hidden = (s.id !== id); });
   document.querySelectorAll('.fm-tab').forEach(function(i) { i.classList.remove('active'); });
