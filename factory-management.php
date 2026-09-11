@@ -82,14 +82,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('/factory-management.php#prices');
     }
 
-    // ── DELIVERY: confirm / correct factory weight ─
-    if ($action === 'update_factory_weight') {
-        $id     = (int)($_POST['id'] ?? 0);
-        $weight = trim($_POST['factory_weight'] ?? '');
-        $weight = ($weight === '') ? null : (float)$weight;
-        DB::execute("UPDATE daily_assignments SET factory_weight=? WHERE id=? AND estate_id=? AND factory_id IS NOT NULL",
-            [$weight, $id, $estateId]);
-        flash('success', $weight === null ? 'Factory weight cleared.' : 'Factory weight confirmed.');
+    // ── DELIVERY: assign factory and/or confirm weight ─
+    if ($action === 'update_delivery') {
+        $id        = (int)($_POST['id'] ?? 0);
+        $factoryId = (int)($_POST['factory_id'] ?? 0) ?: null;
+        $weight    = trim($_POST['factory_weight'] ?? '');
+        $weight    = ($weight === '') ? null : (float)$weight;
+        DB::execute("UPDATE daily_assignments SET factory_id=?, factory_weight=? WHERE id=? AND estate_id=?",
+            [$factoryId, $weight, $id, $estateId]);
+        flash('success', 'Delivery updated.');
         redirect('/factory-management.php#deliveries');
     }
 }
@@ -175,13 +176,19 @@ if ($factoriesReady) {
         ORDER BY da.assignment_date DESC, da.id DESC LIMIT 10", [$estateId]);
 
     // ── DELIVERIES TAB: filters ──
-    $filterFactory = $_GET['factory'] ?? 'all';
+    // Shows every Tea Plucking (KG) record for the period — not just ones
+    // already tied to a factory — so a factory (and weight) can be assigned
+    // here too. Records created before this feature, or without a factory
+    // picked on the assignment form, would otherwise never appear anywhere.
+    $filterFactory = $_GET['factory'] ?? 'all'; // 'all' | 'none' (unassigned) | <factory id>
     $filterMonth   = $_GET['month']   ?? date('Y-m');
     $filterDate    = $_GET['fdate']   ?? '';
 
-    $where  = "da.estate_id=? AND da.factory_id IS NOT NULL";
+    $where  = "da.estate_id=? AND LOWER(wt.unit_label)='kg' AND da.approval_status='approved'";
     $params = [$estateId];
-    if ($filterFactory !== 'all' && (int)$filterFactory > 0) {
+    if ($filterFactory === 'none') {
+        $where .= " AND da.factory_id IS NULL";
+    } elseif ($filterFactory !== 'all' && (int)$filterFactory > 0) {
         $where   .= " AND da.factory_id=?";
         $params[] = (int)$filterFactory;
     }
@@ -201,7 +208,8 @@ if ($factoriesReady) {
         FROM daily_assignments da
         LEFT JOIN workers w ON da.worker_id=w.id
         JOIN plantations p ON da.plantation_id=p.id
-        JOIN factories f ON da.factory_id=f.id
+        JOIN work_types wt ON da.work_type_id=wt.id
+        LEFT JOIN factories f ON da.factory_id=f.id
         LEFT JOIN factory_prices fp ON fp.factory_id=da.factory_id AND fp.price_month = DATE_FORMAT(da.assignment_date,'%Y-%m-01')
         WHERE $where
         ORDER BY da.assignment_date DESC, da.id DESC", $params);
@@ -328,6 +336,7 @@ require_once __DIR__ . '/includes/header.php';
         <label>Factory</label>
         <select name="factory">
           <option value="all" <?= $filterFactory === 'all' ? 'selected' : '' ?>>All Factories</option>
+          <option value="none" <?= $filterFactory === 'none' ? 'selected' : '' ?>>Unassigned</option>
           <?php foreach ($factories as $f): ?>
           <option value="<?= $f['id'] ?>" <?= (string)$filterFactory === (string)$f['id'] ? 'selected' : '' ?>><?= sanitize($f['name']) ?></option>
           <?php endforeach; ?>
@@ -609,9 +618,8 @@ require_once __DIR__ . '/includes/header.php';
       <table>
         <thead>
           <tr>
-            <th>Date</th><th>Factory</th><th>Section</th><th>Worker</th>
+            <th>Date</th><th colspan="2">Factory / Confirm Weight (KG)</th><th>Section</th><th>Worker</th>
             <th style="text-align:right">Plucking (KG)</th>
-            <th style="text-align:right">Factory (KG)</th>
             <th style="text-align:right">Difference</th>
             <th style="text-align:right">Price/KG</th>
             <th style="text-align:right">Value</th>
@@ -620,34 +628,42 @@ require_once __DIR__ . '/includes/header.php';
         </thead>
         <tbody>
           <?php foreach ($deliveries as $d):
-            $diff  = $d['factory_weight'] !== null ? ((float)$d['quantity'] - (float)$d['factory_weight']) : null;
-            $value = ($d['factory_weight'] !== null && $d['price_per_kg'] !== null) ? (float)$d['factory_weight'] * (float)$d['price_per_kg'] : null;
+            $diff   = $d['factory_weight'] !== null ? ((float)$d['quantity'] - (float)$d['factory_weight']) : null;
+            $value  = ($d['factory_weight'] !== null && $d['price_per_kg'] !== null) ? (float)$d['factory_weight'] * (float)$d['price_per_kg'] : null;
+            $status = $d['factory_id'] === null ? 'unassigned' : ($d['factory_weight'] !== null ? 'received' : 'pending');
+            $statusLabel = ['unassigned' => 'Unassigned', 'pending' => 'Pending', 'received' => 'Received'][$status];
+            $statusClass = ['unassigned' => 'fm-status-pending', 'pending' => 'fm-status-pending', 'received' => 'fm-status-received'][$status];
           ?>
           <tr>
             <td><?= fmtDate($d['assignment_date']) ?></td>
-            <td><?= sanitize($d['factory_name']) ?></td>
-            <td><?= sanitize($d['plantation_name']) ?></td>
-            <td><?= sanitize($d['full_name']) ?></td>
-            <td style="text-align:right"><?= number_format($d['quantity'], 1) ?></td>
-            <td style="text-align:right">
-              <form method="POST" style="display:flex;gap:4px;align-items:center;justify-content:flex-end">
-                <input type="hidden" name="action" value="update_factory_weight">
+            <td colspan="2">
+              <form method="POST" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                <input type="hidden" name="action" value="update_delivery">
                 <input type="hidden" name="id" value="<?= $d['id'] ?>">
+                <select name="factory_id" style="font-size:12px;padding:5px 8px;border:1px solid #d8ddd5;border-radius:6px">
+                  <option value="">— Unassigned —</option>
+                  <?php foreach ($factories as $f): ?>
+                  <option value="<?= $f['id'] ?>" <?= (int)$d['factory_id'] === (int)$f['id'] ? 'selected' : '' ?>><?= sanitize($f['name']) ?></option>
+                  <?php endforeach; ?>
+                </select>
                 <input type="number" name="factory_weight" class="fm-weight-input" step="0.01" min="0"
-                       value="<?= $d['factory_weight'] !== null ? $d['factory_weight'] : '' ?>" placeholder="—">
+                       value="<?= $d['factory_weight'] !== null ? $d['factory_weight'] : '' ?>" placeholder="Factory KG">
                 <button type="submit" class="btn btn-outline btn-sm" title="Save"><i class="ti ti-check"></i></button>
               </form>
             </td>
+            <td><?= sanitize($d['plantation_name']) ?></td>
+            <td><?= sanitize($d['full_name']) ?></td>
+            <td style="text-align:right"><?= number_format($d['quantity'], 1) ?></td>
             <td style="text-align:right" class="<?= $diff === null ? '' : ($diff > 0 ? 'fm-diff-neg' : ($diff < 0 ? 'fm-diff-pos' : '')) ?>">
               <?= $diff === null ? '—' : number_format($diff, 1) ?>
             </td>
             <td style="text-align:right"><?= $d['price_per_kg'] !== null ? number_format($d['price_per_kg'], 2) : '—' ?></td>
             <td style="text-align:right;font-weight:700"><?= $value !== null ? money($value) : '—' ?></td>
-            <td><span class="<?= $d['factory_weight'] !== null ? 'fm-status-received' : 'fm-status-pending' ?>"><?= $d['factory_weight'] !== null ? 'Received' : 'Pending' ?></span></td>
+            <td><span class="<?= $statusClass ?>"><?= $statusLabel ?></span></td>
           </tr>
           <?php endforeach; ?>
           <?php if (!$deliveries): ?>
-          <tr><td colspan="10"><div class="empty-state"><i class="ti ti-truck-delivery"></i><p>No factory deliveries match these filters</p></div></td></tr>
+          <tr><td colspan="10"><div class="empty-state"><i class="ti ti-truck-delivery"></i><p>No plucking records match these filters</p></div></td></tr>
           <?php endif; ?>
         </tbody>
       </table>
