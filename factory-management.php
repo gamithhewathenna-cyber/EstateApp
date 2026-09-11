@@ -416,10 +416,15 @@ require_once __DIR__ . '/includes/header.php';
 .fm-diff-neg { color: var(--red-600); font-weight:600; }
 .fm-diff-pos { color: var(--green-600); font-weight:600; }
 .fm-weight-input { width:90px;padding:5px 8px;font-size:12px;border:1px solid #d8ddd5;border-radius:6px;text-align:right; }
+.fm-overview-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
 
+@media (max-width: 900px) {
+  .fm-overview-grid { grid-template-columns: 1fr 1fr; }
+}
 @media (max-width: 600px) {
   .fm-tab { padding: 8px 10px; font-size: 11px; }
   .fm-tab i { font-size: 15px; }
+  .fm-overview-grid { grid-template-columns: 1fr; }
 }
 </style>
 
@@ -501,58 +506,52 @@ require_once __DIR__ . '/includes/header.php';
     </div>
   </div>
 
-  <!-- Factory Profit Summary: Value − Expenses = Net Profit for the selected month -->
-  <div class="card" style="margin-bottom:20px;border-left:4px solid var(--green-400)">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-      <i class="ti ti-calculator" style="color:var(--green-600);font-size:18px"></i>
-      <span style="font-size:14px;font-weight:700;color:var(--green-900)">Factory Profit Summary</span>
-      <span style="font-size:12px;color:var(--gray-400);margin-left:4px"><?= $filterMonthLabel ?></span>
-      <a href="#expenses" class="card-action" style="margin-left:auto" onclick="return fmShowTab('expenses')">Manage Expenses</a>
-    </div>
-    <div class="period-cost-grid">
-      <div style="background:var(--green-50);border-radius:var(--radius-md);padding:14px 16px">
-        <div style="font-size:11px;font-weight:700;color:var(--green-600);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">
-          <i class="ti ti-coin"></i> Factory Value
-        </div>
-        <div style="font-size:20px;font-weight:700;color:var(--green-800)"><?= money($ovTotalValue) ?></div>
-      </div>
-      <div style="background:var(--amber-50);border-radius:var(--radius-md);padding:14px 16px">
-        <div style="font-size:11px;font-weight:700;color:var(--amber-600);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">
-          <i class="ti ti-receipt-2"></i> Factory Expenses
-        </div>
-        <div style="font-size:20px;font-weight:700;color:var(--amber-600)"><?= money($ovTotalExpenses) ?></div>
-      </div>
-      <div style="background:<?= $ovNetProfit >= 0 ? 'var(--green-50)' : 'var(--red-50)' ?>;border-radius:var(--radius-md);padding:14px 16px;<?= $ovNetProfit < 0 ? 'border:1px solid #fca5a5' : '' ?>">
-        <div style="font-size:11px;font-weight:700;color:<?= $ovNetProfit >= 0 ? 'var(--green-600)' : 'var(--red-600)' ?>;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">
-          <i class="ti ti-sum"></i> Net Profit
-        </div>
-        <div style="font-size:20px;font-weight:700;color:<?= $ovNetProfit >= 0 ? 'var(--green-800)' : 'var(--red-600)' ?>"><?= money($ovNetProfit) ?></div>
-      </div>
-    </div>
-  </div>
+  <div class="fm-overview-grid" style="margin-bottom:20px">
 
-  <div class="grid-2" style="margin-bottom:20px">
+    <!-- Factory Profit Summary: Value − Expenses = Net Profit for the selected month -->
+    <div class="card" style="border-left:4px solid var(--green-400)">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+        <i class="ti ti-calculator" style="color:var(--green-600);font-size:16px"></i>
+        <span style="font-size:13px;font-weight:700;color:var(--green-900)">Profit Summary</span>
+        <a href="#expenses" class="card-action" style="margin-left:auto;font-size:11px" onclick="return fmShowTab('expenses')">Expenses</a>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--green-50);border-radius:var(--radius-md);padding:9px 12px">
+          <span style="font-size:11px;font-weight:700;color:var(--green-600);text-transform:uppercase;letter-spacing:.03em"><i class="ti ti-coin"></i> Value</span>
+          <span style="font-size:15px;font-weight:700;color:var(--green-800)"><?= money($ovTotalValue) ?></span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--amber-50);border-radius:var(--radius-md);padding:9px 12px">
+          <span style="font-size:11px;font-weight:700;color:var(--amber-600);text-transform:uppercase;letter-spacing:.03em"><i class="ti ti-receipt-2"></i> Expenses</span>
+          <span style="font-size:15px;font-weight:700;color:var(--amber-600)"><?= money($ovTotalExpenses) ?></span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;background:<?= $ovNetProfit >= 0 ? 'var(--green-50)' : 'var(--red-50)' ?>;border-radius:var(--radius-md);padding:9px 12px;<?= $ovNetProfit < 0 ? 'border:1px solid #fca5a5' : '' ?>">
+          <span style="font-size:11px;font-weight:700;color:<?= $ovNetProfit >= 0 ? 'var(--green-600)' : 'var(--red-600)' ?>;text-transform:uppercase;letter-spacing:.03em"><i class="ti ti-sum"></i> Net Profit</span>
+          <span style="font-size:15px;font-weight:700;color:<?= $ovNetProfit >= 0 ? 'var(--green-800)' : 'var(--red-600)' ?>"><?= money($ovNetProfit) ?></span>
+        </div>
+      </div>
+    </div>
+
     <!-- Daily trend -->
     <div class="card">
       <div class="card-header">
-        <div class="card-title"><i class="ti ti-chart-bar"></i> Factory Deliveries (KG) — <?= $filterMonthLabel ?></div>
+        <div class="card-title" style="font-size:13px"><i class="ti ti-chart-bar"></i> Deliveries (KG)</div>
       </div>
       <?php if ($dailyFactoryKg): ?>
-      <div class="mini-chart" style="height:120px;gap:3px">
+      <div class="mini-chart" style="height:100px;gap:3px">
         <?php foreach ($dailyFactoryKg as $d): ?>
         <div class="mini-bar" style="height:<?= $maxDailyFactoryKg > 0 ? round((float)$d['kg'] / $maxDailyFactoryKg * 100) : 0 ?>%"
              title="<?= fmtDate($d['assignment_date']) ?>: <?= number_format($d['kg'], 1) ?> kg"></div>
         <?php endforeach; ?>
       </div>
       <?php else: ?>
-      <div class="empty-state"><i class="ti ti-chart-bar-off"></i><p>No confirmed factory weights yet this month</p></div>
+      <div class="empty-state"><i class="ti ti-chart-bar-off"></i><p>No confirmed weights yet</p></div>
       <?php endif; ?>
     </div>
 
     <!-- Factory performance breakdown -->
     <div class="card">
       <div class="card-header">
-        <div class="card-title"><i class="ti ti-chart-pie"></i> Factory Performance — <?= $filterMonthLabel ?></div>
+        <div class="card-title" style="font-size:13px"><i class="ti ti-chart-pie"></i> Factory Performance</div>
         <a href="#deliveries" class="card-action" onclick="return fmShowTab('deliveries')">View All</a>
       </div>
       <?php if ($factoryMonthMap): ?>
@@ -561,22 +560,23 @@ require_once __DIR__ . '/includes/header.php';
           $stat  = $factoryMonthMap[$f['id']];
           $share = $ovTotalWeight > 0 ? round($stat['kg'] / $ovTotalWeight * 100) : 0;
         ?>
-        <div style="margin-bottom:14px">
+        <div style="margin-bottom:12px">
           <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
-            <span style="font-size:13px;font-weight:600;color:var(--green-900)"><?= sanitize($f['name']) ?></span>
-            <span style="font-size:13px;font-weight:700;color:var(--green-700)"><?= money($stat['value']) ?></span>
+            <span style="font-size:12px;font-weight:600;color:var(--green-900)"><?= sanitize($f['name']) ?></span>
+            <span style="font-size:12px;font-weight:700;color:var(--green-700)"><?= money($stat['value']) ?></span>
           </div>
-          <div style="height:7px;background:var(--gray-50);border-radius:4px;overflow:hidden;margin-bottom:3px">
+          <div style="height:6px;background:var(--gray-50);border-radius:4px;overflow:hidden;margin-bottom:3px">
             <div style="width:<?= $share ?>%;height:100%;background:linear-gradient(90deg,var(--green-400),var(--green-600));border-radius:4px"></div>
           </div>
-          <div style="font-size:11px;color:var(--gray-400)"><?= number_format($stat['kg'], 0) ?> kg · <?= $share ?>% share</div>
+          <div style="font-size:10px;color:var(--gray-400)"><?= number_format($stat['kg'], 0) ?> kg · <?= $share ?>%</div>
         </div>
         <?php endforeach; ?>
       <?php else: ?>
-      <div class="empty-state"><i class="ti ti-building-factory-2"></i><p>No confirmed deliveries yet this month</p></div>
+      <div class="empty-state"><i class="ti ti-building-factory-2"></i><p>No confirmed deliveries yet</p></div>
       <?php endif; ?>
     </div>
   </div>
+  <div style="font-size:11px;color:var(--gray-400);margin-top:-14px;margin-bottom:20px"><?= $filterMonthLabel ?></div>
 
   <!-- Recent deliveries -->
   <div class="card" style="margin-bottom:20px">
