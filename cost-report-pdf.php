@@ -208,12 +208,12 @@ $totalPaidAmt     = $grandPaid + $expensesPaidAmt;
 <title><?= sanitize($estateName) ?> — Weekly Cost Report — <?= $monthLabel ?></title>
 <style>
 /* ── PRINT STYLES ── */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Noto+Sans+Sinhala:wght@400;600;700&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: 'Noto Sans Sinhala', 'Segoe UI', Arial, sans-serif;
+  font-family: 'Poppins', 'Noto Sans Sinhala', 'Segoe UI', Arial, sans-serif;
   font-size: 12px;
   color: #1a2e0a;
   background: #fff;

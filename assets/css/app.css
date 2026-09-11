@@ -38,7 +38,8 @@
   --shadow-md: 0 4px 12px rgba(0,0,0,0.10);
 }
 
-body { font-family: system-ui, -apple-system, sans-serif; background: #f4f6f3; color: #1a1a18; font-size: 14px; line-height: 1.6; }
+body { font-family: 'Poppins', system-ui, -apple-system, sans-serif; background: #f4f6f3; color: #1a1a18; font-size: 14px; line-height: 1.6; }
+button, input, select, textarea { font-family: inherit; }
 
 /* ---- LAYOUT ---- */
 .app-wrapper { display: flex; min-height: 100vh; }

@@ -114,7 +114,7 @@ $sectionColors = ['#4CAF50','#2196F3','#FF9800','#9C27B0','#F44336','#00BCD4'];
 /* ============================================
    TV DASHBOARD — 16:9 Full Screen
    ============================================ */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -141,7 +141,7 @@ html, body {
   height: 100vh;
   overflow: hidden;
   background: #0a1f07;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Poppins', system-ui, sans-serif;
   color: var(--text);
   animation: fadeInPage .5s ease-out;
 }
