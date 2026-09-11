@@ -25,6 +25,15 @@ $nav = [
 $activeEstateId   = Auth::estateId();
 $activeEstateName = Auth::estateName();
 
+// Estates this user can switch between (for the "Switch Estate" popup) —
+// wrapped in try/catch since this runs on every page via header.php.
+try {
+    $switchableEstates = DB::fetchAll("SELECT e.*, ue.role as estate_role, ue.is_default
+        FROM estates e JOIN user_estates ue ON e.id = ue.estate_id
+        WHERE ue.user_id = ? AND e.is_active = 1
+        ORDER BY ue.is_default DESC, e.name ASC", [$user['id']]);
+} catch (Exception $e) { $switchableEstates = []; }
+
 // Load estate-specific app settings
 try {
     $settingsRows = DB::fetchAll("SELECT `key`,`value` FROM app_settings WHERE estate_id=?", [$activeEstateId]);
@@ -150,11 +159,12 @@ $_themeAccent   = $appSettings['theme_accent']   ?? '#4CAF50';
           <div style="width:8px;height:8px;border-radius:50%;background:var(--green-400);flex-shrink:0"></div>
           <span style="font-size:12px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?= sanitize($activeEstateName) ?></span>
         </div>
-        <a href="<?= BASE_URL ?>/estate-picker.php?t=<?= time() ?>" style="font-size:10px;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);padding:3px 8px;border-radius:20px;text-decoration:none;white-space:nowrap;flex-shrink:0;transition:background .15s"
+        <button type="button" onclick="openModal('modal-switch-estate')"
+           style="font-family:inherit;font-size:10px;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);padding:3px 8px;border-radius:20px;border:none;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .15s"
            onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'"
            title="Switch Estate">
           <i class="ti ti-switch-horizontal" style="font-size:11px;vertical-align:-1px"></i> Switch
-        </a>
+        </button>
       </div>
     </div>
     <div class="user-info">

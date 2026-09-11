@@ -31,3 +31,13 @@ document.addEventListener('DOMContentLoaded', function() {
 function confirmDelete(msg) {
   return confirm(msg || 'Are you sure you want to delete this?');
 }
+
+// Modal open/close (toggles the .open class — see .modal-overlay in app.css)
+function openModal(id) {
+  var el = document.getElementById(id);
+  if (el) el.classList.add('open');
+}
+function closeModal(id) {
+  var el = document.getElementById(id);
+  if (el) el.classList.remove('open');
+}
