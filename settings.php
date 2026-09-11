@@ -491,6 +491,7 @@ require_once __DIR__ . '/includes/header.php';
   border-radius: var(--radius-lg);
   padding: 24px;
   margin-bottom: 20px;
+  animation: fadeInPage .25s ease;
 }
 .settings-section-title {
   font-size: 16px;

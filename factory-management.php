@@ -431,7 +431,7 @@ require_once __DIR__ . '/includes/header.php';
 .fm-tab:hover  { background: var(--green-50); color: var(--green-800); }
 .fm-tab.active { background: var(--green-50); color: var(--green-800); border-bottom-color: var(--green-600); font-weight: 700; }
 .fm-tab i      { font-size: 17px; flex-shrink: 0; }
-.fm-panel { }
+.fm-panel { animation: fadeInPage .25s ease; }
 .fm-status-received { background:#d1fae5;color:#065f46;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap; }
 .fm-status-pending  { background:#fff3cd;color:#856404;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap; }
 .fm-diff-neg { color: var(--red-600); font-weight:600; }

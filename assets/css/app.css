@@ -80,7 +80,21 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #f4f6f3; c
 .topbar-date { font-size: 12px; color: var(--gray-600); background: var(--gray-50); padding: 5px 12px; border-radius: var(--radius-md); border: 1px solid #e0e0d8; display: flex; align-items: center; gap: 5px; }
 .topbar-date i { font-size: 14px; }
 .btn-morning { background: var(--amber-400); color: #fff; padding: 7px 14px; border-radius: var(--radius-md); text-decoration: none; font-size: 13px; display: flex; align-items: center; gap: 6px; }
-.content { padding: 22px 24px; flex: 1; }
+.content { padding: 22px 24px; flex: 1; animation: fadeInPage .28s ease; }
+
+/* ---- FADE TRANSITIONS (page loads + JS tab switches) ---- */
+@keyframes fadeInPage {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* Cross-fade between full page navigations, in browsers that support it
+   (Chrome/Edge) — a no-op elsewhere, so it's a safe progressive enhancement. */
+@view-transition { navigation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .22s; }
+@media (prefers-reduced-motion: reduce) {
+  .content { animation: none; }
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+}
 
 /* ---- SIDEBAR OVERLAY (mobile) ---- */
 .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 299; }
