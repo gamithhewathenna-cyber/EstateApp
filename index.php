@@ -169,7 +169,7 @@ require_once __DIR__ . '/includes/header.php';
 <style>
 .range-bar{background:#fff;border:1px solid #e8ede5;border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .range-label{font-size:14px;font-weight:700;color:var(--green-900);display:flex;align-items:center;gap:7px;flex:1;min-width:180px}
-.shortcut-btn{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid #e8ede5;background:#fff;cursor:pointer;color:var(--gray-600);text-decoration:none;white-space:nowrap;transition:all .15s}
+.shortcut-btn{padding:5px 12px;border-radius:var(--radius-md);font-size:12px;font-weight:600;border:1px solid #e8ede5;background:#fff;cursor:pointer;color:var(--gray-600);text-decoration:none;white-space:nowrap;transition:all .15s}
 .shortcut-btn:hover{background:var(--green-50);border-color:var(--green-200);color:var(--green-800)}
 .shortcut-btn.active{background:var(--green-600);border-color:var(--green-600);color:#fff}
 .range-inputs{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
