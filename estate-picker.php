@@ -67,7 +67,7 @@ $logoUrl = $logoFile ? BASE_URL.'/assets/img/'.$logoFile.'?v=1' : '';
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
 <style>
 body { background: var(--green-900); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
-.picker-wrap { width:100%; max-width:520px; animation:fadeInPage .28s ease; }
+.picker-wrap { width:100%; max-width:520px; animation:fadeInPage .5s ease-out; }
 .picker-header { text-align:center; margin-bottom:28px; }
 .picker-logo { width:56px;height:56px;background:var(--green-400);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;overflow:hidden; }
 .picker-logo img { width:100%;height:100%;object-fit:contain;padding:6px; }

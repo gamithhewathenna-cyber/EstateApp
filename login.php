@@ -200,7 +200,7 @@ if ($view === 'reset' && $resetToken && $resetUid) {
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
 <style>
 .login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--green-900);padding:20px}
-.login-card{background:#fff;border-radius:16px;padding:36px 32px;width:400px;max-width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:fadeInPage .28s ease}
+.login-card{background:#fff;border-radius:16px;padding:36px 32px;width:400px;max-width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:fadeInPage .5s ease-out}
 .login-logo{text-align:center;margin-bottom:28px}
 .login-logo .lmark{width:56px;height:56px;background:var(--green-400);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px}
 .login-logo .lmark img{width:100%;height:100%;object-fit:contain;padding:6px;border-radius:14px}

@@ -143,9 +143,9 @@ html, body {
   background: #0a1f07;
   font-family: 'Inter', system-ui, sans-serif;
   color: var(--text);
-  animation: fadeInPage .3s ease;
+  animation: fadeInPage .5s ease-out;
 }
-@keyframes fadeInPage { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeInPage { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { html, body { animation: none; } }
 
 /* Animated gradient background */

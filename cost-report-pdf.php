@@ -229,10 +229,10 @@ body {
 /* Screen preview */
 @media screen {
   body { background: #e8ede5; padding: 20px; }
-  .page { background: #fff; max-width: 794px; margin: 0 auto 20px; padding: 24px 28px; box-shadow: 0 4px 20px rgba(0,0,0,.12); border-radius: 6px; animation: fadeInPage .28s ease; }
+  .page { background: #fff; max-width: 794px; margin: 0 auto 20px; padding: 24px 28px; box-shadow: 0 4px 20px rgba(0,0,0,.12); border-radius: 6px; animation: fadeInPage .5s ease-out; }
   .no-print { display: block; }
 }
-@keyframes fadeInPage { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeInPage { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .page { animation: none; } }
 
 @media print {
