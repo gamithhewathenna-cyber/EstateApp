@@ -229,7 +229,22 @@ require_once __DIR__ . '/includes/header.php';
   .dash-stats-6{grid-template-columns:repeat(3,1fr)}
 }
 @media(max-width:600px){
-  .dash-stats-6{grid-template-columns:1fr 1fr;gap:10px}
+  /* Horizontal slide-scroller on phones instead of a cramped 2-col grid */
+  .dash-stats-6{
+    display:flex;
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    scroll-snap-type:x proximity;
+    gap:10px;
+    padding-bottom:6px;
+  }
+  .dash-stats-6::-webkit-scrollbar{display:none}
+  .dash-stats-6 .stat-card{
+    flex:0 0 64%;
+    min-width:64%;
+    scroll-snap-align:start;
+  }
 }
 @media(max-width:600px){
   .range-bar{padding:12px 14px;gap:8px}
