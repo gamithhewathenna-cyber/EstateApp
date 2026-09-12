@@ -216,10 +216,15 @@ require_once __DIR__ . '/includes/header.php';
 .range-inputs input[type=date]{font-size:12px;padding:5px 8px;border:1px solid #d8ddd5;border-radius:var(--radius-md);color:var(--gray-800)}
 /* Responsive dashboard grids */
 .dash-section-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.dash-three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px}
 .period-cost-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 .dash-stats-6{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:20px}
+@media(max-width:900px){
+  .dash-three-col{grid-template-columns:1fr 1fr}
+}
 @media(max-width:768px){
   .dash-section-grid{grid-template-columns:1fr}
+  .dash-three-col{grid-template-columns:1fr}
   .period-cost-grid{grid-template-columns:1fr}
   .dash-stats-6{grid-template-columns:repeat(3,1fr)}
 }
@@ -446,30 +451,47 @@ require_once __DIR__ . '/includes/header.php';
 
 </div>
 
-<!-- ── SECTION COST + KG BY SECTION ────────────────── -->
-<div class="dash-section-grid">
+<!-- ── MONTHLY ROI + KG BY SECTION + SECTION COST ──── -->
+<div class="dash-three-col">
 
-  <!-- Section Cost -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title"><i class="ti ti-building-estate"></i> Section Cost</div>
-      <span style="font-size:11px;color:var(--gray-400)"><?= fmtDate($dateFrom) ?> → <?= fmtDate($dateTo) ?></span>
+  <!-- Monthly ROI -->
+  <div class="card" style="border-left:4px solid var(--green-600)">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+      <i class="ti ti-percentage" style="color:var(--green-600);font-size:18px"></i>
+      <span style="font-size:14px;font-weight:700;color:var(--green-900)">Monthly ROI</span>
+      <span style="font-size:12px;color:var(--gray-400);margin-left:4px"><?= sanitize($rangeLabel) ?></span>
     </div>
-    <?php if ($sectionCosts && max(array_column($sectionCosts,'cost')) > 0): ?>
-      <?php foreach ($sectionCosts as $sc): ?>
-      <div style="margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
-          <span style="font-size:13px;font-weight:600;color:var(--green-900)"><?= sanitize($sc['name']) ?></span>
-          <span style="font-size:13px;font-weight:700;color:var(--green-700)"><?= money($sc['cost']) ?></span>
-        </div>
-        <div style="height:7px;background:var(--gray-50);border-radius:4px;overflow:hidden;margin-bottom:3px">
-          <div style="width:<?= $maxSectionCost>0?round($sc['cost']/$maxSectionCost*100):0 ?>%;height:100%;background:linear-gradient(90deg,var(--green-400),var(--green-600));border-radius:4px"></div>
-        </div>
-        <div style="font-size:11px;color:var(--gray-400)"><?= number_format((float)$sc['kg'],1) ?> kg plucked</div>
+
+    <!-- Overall Estate ROI -->
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:<?= $roiOverall === null ? 'var(--gray-50)' : ($roiOverall >= 0 ? 'var(--green-50)' : 'var(--red-50)') ?>;border-radius:var(--radius-md);padding:14px 16px;margin-bottom:16px;<?= $roiOverall !== null && $roiOverall < 0 ? 'border:1px solid #fca5a5' : '' ?>">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Overall Estate ROI</div>
+        <div style="font-size:11px;color:var(--gray-400)">Revenue <?= money($roiRevenue) ?> · Cost <?= money($roiCost) ?></div>
+      </div>
+      <div style="font-size:26px;font-weight:700;color:<?= $roiOverall === null ? 'var(--gray-400)' : ($roiOverall >= 0 ? 'var(--green-700)' : 'var(--red-600)') ?>">
+        <?= $roiOverall === null ? 'N/A' : number_format($roiOverall, 1) . '%' ?>
+      </div>
+    </div>
+
+    <!-- Section-wise ROI -->
+    <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Section-wise ROI</div>
+    <?php if ($sectionCosts): ?>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+      <?php foreach ($sectionCosts as $roiRow): ?>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--gray-50);border-radius:var(--radius-md)">
+        <span style="font-size:13px;font-weight:600;color:var(--green-900)"><?= sanitize($roiRow['name']) ?></span>
+        <span style="font-size:13px;font-weight:700;color:<?= $roiRow['roi'] === null ? 'var(--gray-400)' : ($roiRow['roi'] >= 0 ? 'var(--green-700)' : 'var(--red-600)') ?>">
+          <?= $roiRow['roi'] === null ? 'N/A' : number_format($roiRow['roi'], 1) . '%' ?>
+        </span>
       </div>
       <?php endforeach; ?>
+    </div>
+    <div style="font-size:10px;color:var(--gray-400)">
+      <i class="ti ti-info-circle" style="font-size:11px;vertical-align:-1px"></i>
+      Section revenue is estimated from each section's share of total KG plucked — factory sales are recorded once per day for the whole estate, not per section.
+    </div>
     <?php else: ?>
-      <div class="empty-state"><i class="ti ti-building-off"></i><p>No section data for this period</p></div>
+    <div class="empty-state"><i class="ti ti-map-pin-off"></i><p>No section data for this period</p></div>
     <?php endif; ?>
   </div>
 
@@ -503,13 +525,35 @@ require_once __DIR__ . '/includes/header.php';
     <?php endif; ?>
   </div>
 
+  <!-- Section Cost -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="ti ti-building-estate"></i> Section Cost</div>
+      <span style="font-size:11px;color:var(--gray-400)"><?= fmtDate($dateFrom) ?> → <?= fmtDate($dateTo) ?></span>
+    </div>
+    <?php if ($sectionCosts && max(array_column($sectionCosts,'cost')) > 0): ?>
+      <?php foreach ($sectionCosts as $sc): ?>
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+          <span style="font-size:13px;font-weight:600;color:var(--green-900)"><?= sanitize($sc['name']) ?></span>
+          <span style="font-size:13px;font-weight:700;color:var(--green-700)"><?= money($sc['cost']) ?></span>
+        </div>
+        <div style="height:7px;background:var(--gray-50);border-radius:4px;overflow:hidden;margin-bottom:3px">
+          <div style="width:<?= $maxSectionCost>0?round($sc['cost']/$maxSectionCost*100):0 ?>%;height:100%;background:linear-gradient(90deg,var(--green-400),var(--green-600));border-radius:4px"></div>
+        </div>
+        <div style="font-size:11px;color:var(--gray-400)"><?= number_format((float)$sc['kg'],1) ?> kg plucked</div>
+      </div>
+      <?php endforeach; ?>
+    <?php else: ?>
+      <div class="empty-state"><i class="ti ti-building-off"></i><p>No section data for this period</p></div>
+    <?php endif; ?>
+  </div>
+
 </div>
 
-<!-- ── PERIOD COST SUMMARY + MONTHLY ROI (side by side) ── -->
-<div class="grid-2" style="margin-bottom:20px">
-
+<!-- ── PERIOD COST SUMMARY ──────────────────────────── -->
 <?php if ($payRange['total'] > 0 || $expRange['total'] > 0): ?>
-<div class="card" style="border-left:4px solid var(--green-400)">
+<div class="card" style="margin-bottom:20px;border-left:4px solid var(--green-400)">
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
     <i class="ti ti-calculator" style="color:var(--green-600);font-size:18px"></i>
     <span style="font-size:14px;font-weight:700;color:var(--green-900)">Period Cost Summary</span>
@@ -537,48 +581,6 @@ require_once __DIR__ . '/includes/header.php';
   </div>
 </div>
 <?php endif; ?>
-
-<div class="card" style="border-left:4px solid var(--green-600)">
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-    <i class="ti ti-percentage" style="color:var(--green-600);font-size:18px"></i>
-    <span style="font-size:14px;font-weight:700;color:var(--green-900)">Monthly ROI</span>
-    <span style="font-size:12px;color:var(--gray-400);margin-left:4px"><?= sanitize($rangeLabel) ?></span>
-  </div>
-
-  <!-- Overall Estate ROI -->
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:<?= $roiOverall === null ? 'var(--gray-50)' : ($roiOverall >= 0 ? 'var(--green-50)' : 'var(--red-50)') ?>;border-radius:var(--radius-md);padding:14px 16px;margin-bottom:16px;<?= $roiOverall !== null && $roiOverall < 0 ? 'border:1px solid #fca5a5' : '' ?>">
-    <div>
-      <div style="font-size:11px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Overall Estate ROI</div>
-      <div style="font-size:11px;color:var(--gray-400)">Revenue <?= money($roiRevenue) ?> · Cost <?= money($roiCost) ?></div>
-    </div>
-    <div style="font-size:26px;font-weight:700;color:<?= $roiOverall === null ? 'var(--gray-400)' : ($roiOverall >= 0 ? 'var(--green-700)' : 'var(--red-600)') ?>">
-      <?= $roiOverall === null ? 'N/A' : number_format($roiOverall, 1) . '%' ?>
-    </div>
-  </div>
-
-  <!-- Section-wise ROI -->
-  <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Section-wise ROI</div>
-  <?php if ($sectionCosts): ?>
-  <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
-    <?php foreach ($sectionCosts as $roiRow): ?>
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--gray-50);border-radius:var(--radius-md)">
-      <span style="font-size:13px;font-weight:600;color:var(--green-900)"><?= sanitize($roiRow['name']) ?></span>
-      <span style="font-size:13px;font-weight:700;color:<?= $roiRow['roi'] === null ? 'var(--gray-400)' : ($roiRow['roi'] >= 0 ? 'var(--green-700)' : 'var(--red-600)') ?>">
-        <?= $roiRow['roi'] === null ? 'N/A' : number_format($roiRow['roi'], 1) . '%' ?>
-      </span>
-    </div>
-    <?php endforeach; ?>
-  </div>
-  <div style="font-size:10px;color:var(--gray-400)">
-    <i class="ti ti-info-circle" style="font-size:11px;vertical-align:-1px"></i>
-    Section revenue is estimated from each section's share of total KG plucked — factory sales are recorded once per day for the whole estate, not per section.
-  </div>
-  <?php else: ?>
-  <div class="empty-state"><i class="ti ti-map-pin-off"></i><p>No section data for this period</p></div>
-  <?php endif; ?>
-</div>
-
-</div><!-- .grid-2 (Period Cost Summary + Monthly ROI) -->
 
 <!-- ── ROW 3: TOP WORKERS + TODAY ATTENDANCE + RECENT EXPENSES ── -->
 <div class="grid-2" style="margin-bottom:20px">
