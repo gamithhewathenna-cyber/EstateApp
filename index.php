@@ -332,7 +332,7 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 
     <?php if ($fertDue): ?>
-    <div style="display:flex;flex-direction:column;gap:8px">
+    <div style="display:flex;flex-direction:column;gap:6px;max-height:360px;overflow-y:auto;padding-right:2px">
 
     <?php
     $groups = [
@@ -344,8 +344,8 @@ require_once __DIR__ . '/includes/header.php';
     foreach ($groups as $g):
       if (!count($g['items'])) continue;
     ?>
-    <div style="margin-bottom:4px">
-      <div style="font-size:10px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:flex;align-items:center;gap:5px">
+    <div style="margin-bottom:2px">
+      <div style="font-size:10px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;display:flex;align-items:center;gap:5px">
         <i class="ti <?= $g['icon'] ?>" style="font-size:12px;color:<?= $g['border'] ?>"></i>
         <?= $g['label'] ?>
       </div>
@@ -355,7 +355,7 @@ require_once __DIR__ . '/includes/header.php';
                  : ($days === 0 ? 'Due today'
                  : 'In '.$days.' day'.($days>1?'s':''));
       ?>
-      <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:<?= $g['bg'] ?>;border-left:3px solid <?= $g['border'] ?>;border-radius:0 8px 8px 0;margin-bottom:6px">
+      <div style="display:flex;align-items:center;gap:10px;padding:7px 12px;background:<?= $g['bg'] ?>;border-left:3px solid <?= $g['border'] ?>;border-radius:0 8px 8px 0;margin-bottom:4px">
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:700;color:var(--green-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
             <?= sanitize($f['plantation_name']) ?>
@@ -369,8 +369,8 @@ require_once __DIR__ . '/includes/header.php';
           </div>
         </div>
         <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:11px;font-weight:800;color:#fff;background:<?= $g['badge_bg'] ?>;padding:3px 10px;border-radius:20px;white-space:nowrap"><?= $dueText ?></div>
-          <div style="font-size:10px;color:var(--gray-400);margin-top:3px"><?= fmtDate($f['next_due_date']) ?></div>
+          <div style="font-size:10px;font-weight:800;color:#fff;background:<?= $g['badge_bg'] ?>;padding:2px 9px;border-radius:20px;white-space:nowrap"><?= $dueText ?></div>
+          <div style="font-size:10px;color:var(--gray-400);margin-top:2px"><?= fmtDate($f['next_due_date']) ?></div>
         </div>
       </div>
       <?php endforeach; ?>
@@ -399,7 +399,7 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 
     <?php if ($clearingDue): ?>
-    <div style="display:flex;flex-direction:column;gap:8px">
+    <div style="display:flex;flex-direction:column;gap:6px;max-height:360px;overflow-y:auto;padding-right:2px">
 
     <?php
     $clearGroups = [
@@ -411,8 +411,8 @@ require_once __DIR__ . '/includes/header.php';
     foreach ($clearGroups as $g):
       if (!count($g['items'])) continue;
     ?>
-    <div style="margin-bottom:4px">
-      <div style="font-size:10px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:flex;align-items:center;gap:5px">
+    <div style="margin-bottom:2px">
+      <div style="font-size:10px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;display:flex;align-items:center;gap:5px">
         <i class="ti <?= $g['icon'] ?>" style="font-size:12px;color:<?= $g['border'] ?>"></i>
         <?= $g['label'] ?>
       </div>
@@ -422,7 +422,7 @@ require_once __DIR__ . '/includes/header.php';
                  : ($days === 0 ? 'Due today'
                  : 'In '.$days.' day'.($days>1?'s':''));
       ?>
-      <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:<?= $g['bg'] ?>;border-left:3px solid <?= $g['border'] ?>;border-radius:0 8px 8px 0;margin-bottom:6px">
+      <div style="display:flex;align-items:center;gap:10px;padding:7px 12px;background:<?= $g['bg'] ?>;border-left:3px solid <?= $g['border'] ?>;border-radius:0 8px 8px 0;margin-bottom:4px">
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:700;color:var(--green-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
             <?= sanitize($c['plantation_name']) ?>
@@ -435,8 +435,8 @@ require_once __DIR__ . '/includes/header.php';
           </div>
         </div>
         <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:11px;font-weight:800;color:#fff;background:<?= $g['badge_bg'] ?>;padding:3px 10px;border-radius:20px;white-space:nowrap"><?= $dueText ?></div>
-          <div style="font-size:10px;color:var(--gray-400);margin-top:3px"><?= fmtDate($c['next_due_date']) ?></div>
+          <div style="font-size:10px;font-weight:800;color:#fff;background:<?= $g['badge_bg'] ?>;padding:2px 9px;border-radius:20px;white-space:nowrap"><?= $dueText ?></div>
+          <div style="font-size:10px;color:var(--gray-400);margin-top:2px"><?= fmtDate($c['next_due_date']) ?></div>
         </div>
       </div>
       <?php endforeach; ?>
