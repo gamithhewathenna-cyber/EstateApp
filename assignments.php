@@ -527,6 +527,15 @@ require_once __DIR__ . '/includes/header.php';
   .monthly-table th:nth-child(3), .monthly-table td:nth-child(3),
   .monthly-table th:nth-child(4), .monthly-table td:nth-child(4),
   .monthly-table th:nth-child(6), .monthly-table td:nth-child(6) { display: none !important; }
+
+  /* Both cost tables: a bare width:100% table just squishes on narrow
+     screens instead of scrolling. Give it a sane minimum width and stop
+     cell text from wrapping, so the parent's overflow-x:auto (see the
+     wrapping div's inline style) actually kicks in when needed instead of
+     the numbers getting cramped or clipped. */
+  .weekly-table, .monthly-table { min-width: 380px; }
+  .weekly-table th, .weekly-table td,
+  .monthly-table th, .monthly-table td { padding: 6px 8px !important; white-space: nowrap; }
 }
 
 /* ── SMALL PHONE (≤400px) ── */
@@ -535,6 +544,12 @@ require_once __DIR__ . '/includes/header.php';
   .assign-item { font-size: 11px; }
   .cost-summary-grid { grid-template-columns: 1fr; }
   .assign-tabs .tab-btn { font-size: 10px; padding: 5px 8px; }
+  .weekly-table, .monthly-table { min-width: 300px; }
+
+  /* Temporary worker rows (built via JS with inline styles) — the name
+     input's inline min-width:140px plus the qty input/badge/remove button
+     can be too wide to fit together on very small screens. */
+  #temp-workers-list input[name="temp_name[]"] { min-width: 90px !important; }
 }
 </style>
 
@@ -1184,7 +1199,7 @@ require_once __DIR__ . '/includes/header.php';
         <div style="font-size:12px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">
           <i class="ti ti-calendar-week" style="color:var(--green-500)"></i> Weekly Breakdown — <?= date('F Y', strtotime($selCostMonth.'-01')) ?>
         </div>
-        <div style="background:#fff;border:1px solid #e8ede5;border-radius:var(--radius-md);overflow:hidden">
+        <div style="background:#fff;border:1px solid #e8ede5;border-radius:var(--radius-md);overflow-x:auto;-webkit-overflow-scrolling:touch">
         <table class="weekly-table" style="width:100%;border-collapse:collapse;font-size:12px">
           <thead>
             <tr style="background:var(--green-50)">
@@ -1245,7 +1260,7 @@ require_once __DIR__ . '/includes/header.php';
         <div style="font-size:12px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">
           <i class="ti ti-chart-line" style="color:var(--green-500)"></i> Monthly Trend — <?= $selCostYear ?>
         </div>
-        <div style="background:#fff;border:1px solid #e8ede5;border-radius:var(--radius-md);overflow:hidden">
+        <div style="background:#fff;border:1px solid #e8ede5;border-radius:var(--radius-md);overflow-x:auto;-webkit-overflow-scrolling:touch">
         <table class="monthly-table" style="width:100%;border-collapse:collapse;font-size:12px">
           <thead>
             <tr style="background:var(--green-50)">
