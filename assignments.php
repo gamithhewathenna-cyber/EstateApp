@@ -434,6 +434,17 @@ require_once __DIR__ . '/includes/header.php';
 @media (max-width: 600px) {
   /* Form panel */
   .form-panel { padding: 14px !important; }
+
+  /* Date pickers render oversized on mobile (esp. iOS, which inflates the
+     native date widget's height/text) — shrink padding/font/line-height to
+     bring it in line with the other form fields. */
+  input[type="date"] {
+    font-size: 13px !important;
+    padding: 6px 8px !important;
+    line-height: 1.3 !important;
+    height: 36px !important;
+    box-sizing: border-box;
+  }
   .edit-form-grid { grid-template-columns: 1fr !important; }
 
   /* Work type cards */
