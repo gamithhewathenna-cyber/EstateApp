@@ -439,11 +439,15 @@ require_once __DIR__ . '/includes/header.php';
      native date widget's height/text) — shrink padding/font/line-height to
      bring it in line with the other form fields. */
   input[type="date"] {
-    font-size: 13px !important;
-    padding: 6px 8px !important;
-    line-height: 1.3 !important;
-    height: 36px !important;
+    font-size: 12px !important;
+    padding: 4px 6px !important;
+    line-height: 1.2 !important;
+    height: 30px !important;
     box-sizing: border-box;
+  }
+  input[type="date"]::-webkit-date-and-time-value {
+    text-align: left;
+    min-height: auto;
   }
   .edit-form-grid { grid-template-columns: 1fr !important; }
 
