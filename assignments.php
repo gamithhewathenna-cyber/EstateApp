@@ -443,10 +443,13 @@ require_once __DIR__ . '/includes/header.php';
     padding: 4px 6px !important;
     line-height: 1.2 !important;
     height: 30px !important;
+    width: calc(100% - 15px) !important;
+    max-width: calc(100% - 15px) !important;
     box-sizing: border-box;
+    text-align: center;
   }
   input[type="date"]::-webkit-date-and-time-value {
-    text-align: left;
+    text-align: center;
     min-height: auto;
   }
   .edit-form-grid { grid-template-columns: 1fr !important; }
