@@ -162,7 +162,12 @@ button, input, select, textarea { font-family: inherit; }
 .col-full { grid-column: 1 / -1; }
 
 /* ---- FORMS ---- */
-.form-group { display: flex; flex-direction: column; gap: 5px; }
+/* min-width:0 overrides the browser default (min-width:auto), which lets a
+   grid/flex item's content (e.g. a <select>'s longest option text) force
+   the whole track wider than its container — the classic cause of a page
+   that looks fine but is secretly wider than the viewport and gets
+   cropped/shifted on mobile, even though the select itself has width:100%. */
+.form-group { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .form-group label { font-size: 12px; font-weight: 600; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.04em; }
 .form-group input,
 .form-group select,
@@ -237,7 +242,8 @@ tbody tr:hover td { background: #f8faf5; }
 
 /* ---- WORK TYPE SELECTOR ---- */
 .work-type-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
-.wt-card { border: 2px solid #e8ede5; border-radius: var(--radius-md); padding: 10px 12px; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.wt-card { border: 2px solid #e8ede5; border-radius: var(--radius-md); padding: 10px 12px; cursor: pointer; transition: border-color 0.15s, background 0.15s; min-width: 0; }
+.wt-name, .wt-rate { overflow-wrap: break-word; }
 .wt-card:hover { border-color: var(--green-200); background: var(--green-50); }
 .wt-card.selected { border-color: var(--green-400); background: var(--green-50); }
 .wt-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }

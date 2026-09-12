@@ -367,7 +367,19 @@ require_once __DIR__ . '/includes/header.php';
   grid-template-columns: 1fr 1fr;
   gap: 18px;
   align-items: start;
+  min-width: 0;
 }
+.assign-form-col, .assign-list-col { min-width: 0; }
+
+/* A flex/grid item's default min-width is "auto", which resolves to its
+   content's full intrinsic width — so a long worker name (or any long text
+   in a flex:1 cell) can silently force its row, and the whole page, wider
+   than the viewport, even though everything visually looks like it has
+   width:100%. min-width:0 lets these actually shrink/truncate instead. */
+#worker-list label { min-width: 0; }
+#worker-list label > * { min-width: 0; }
+.assign-item, .assign-item > * { min-width: 0; }
+.assign-info { min-width: 0; }
 
 /* Status badges */
 .approval-pending  { background:#fffbeb; border-left:3px solid #f59e0b; }
