@@ -76,7 +76,8 @@ button, input, select, textarea { font-family: inherit; }
 .main-wrap { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .topbar { height: var(--topbar-h); background: #fff; border-bottom: 1px solid #e8ede5; display: flex; align-items: center; gap: 12px; padding: 0 24px; position: sticky; top: 0; z-index: 200; }
 .menu-toggle { display: none; background: none; border: none; cursor: pointer; font-size: 20px; color: var(--gray-600); }
-.page-title { font-size: 17px; font-weight: 600; flex: 1; color: var(--green-900); }
+.topbar-title-wrap { min-width: 0; flex: 1; }
+.page-title { font-size: 17px; font-weight: 600; color: var(--green-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .topbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
 .topbar-date { font-size: 12px; color: var(--gray-600); background: var(--gray-50); padding: 5px 12px; border-radius: var(--radius-md); border: 1px solid #e0e0d8; display: flex; align-items: center; gap: 5px; }
 .topbar-date i { font-size: 14px; }
@@ -84,10 +85,11 @@ button, input, select, textarea { font-family: inherit; }
 .content { padding: 22px 24px; flex: 1; animation: fadeInPage .5s ease-out; }
 
 /* ---- ESTATE SWITCHER (topbar dropdown) ---- */
-.estate-switch { position: relative; margin-top: 1px; }
-.estate-switch-trigger { font-family: inherit; display: flex; align-items: center; gap: 5px; background: none; border: none; cursor: pointer; padding: 2px 6px 2px 2px; border-radius: 6px; font-size: 11px; font-weight: 600; color: var(--green-600); transition: background .15s; }
+.estate-switch { position: relative; margin-top: 1px; max-width: 100%; }
+.estate-switch-trigger { font-family: inherit; display: flex; align-items: center; gap: 5px; background: none; border: none; cursor: pointer; padding: 2px 6px 2px 2px; border-radius: 6px; font-size: 11px; font-weight: 600; color: var(--green-600); transition: background .15s; max-width: 100%; }
 .estate-switch-trigger:hover { background: var(--green-50); }
-.estate-switch-trigger i:first-child { font-size: 11px; }
+.estate-switch-trigger i:first-child { font-size: 11px; flex-shrink: 0; }
+.estate-switch-trigger span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .estate-switch-caret { font-size: 13px; color: var(--gray-400); transition: transform .15s ease; }
 .estate-switch.open .estate-switch-caret { transform: rotate(180deg); }
 .estate-switch-menu {
@@ -112,9 +114,9 @@ button, input, select, textarea { font-family: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .estate-switch-menu, .estate-switch-caret { transition: none; }
 }
-@media (max-width: 600px) {
-  .estate-switch-menu { width: 260px; }
-}
+/* Mobile-specific positioning for .estate-switch-menu lives in the
+   "ADDITIONAL MOBILE FIXES" section further down (it needs position:fixed,
+   not just a narrower width, to avoid overflowing the viewport). */
 
 /* ---- SLIDE-IN TRANSITIONS (page loads + JS tab switches) ---- */
 @keyframes fadeInPage {
@@ -608,9 +610,25 @@ tbody tr:hover td { background: #f8faf5; }
    ADDITIONAL MOBILE FIXES
    ============================================================ */
 
-/* Topbar estate name subtitle — hide on very small screens */
+/* Estate switcher on mobile — the dropdown is anchored to the trigger
+   button via position:absolute, but on narrow screens the trigger sits
+   well off the left edge (past the menu-toggle button), so a fixed-width
+   panel anchored there can run past the right edge of the viewport.
+   Switch to position:fixed, full-width-ish and centered under the topbar,
+   so it always fits regardless of where the trigger happens to sit. */
+@media (max-width: 600px) {
+  .estate-switch-trigger span { max-width: 140px; }
+  .estate-switch-menu {
+    position: fixed;
+    top: calc(var(--topbar-h) + 8px);
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+  }
+}
 @media (max-width: 400px) {
-  .topbar > div > div[style*="font-size:11px"] { display: none; }
+  .estate-switch-trigger span { max-width: 90px; }
 }
 
 /* Report cards — stack actions on mobile */

@@ -181,7 +181,7 @@ $_themeAccent   = $appSettings['theme_accent']   ?? '#4CAF50';
     <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Menu">
       <i class="ti ti-menu-2"></i>
     </button>
-    <div>
+    <div class="topbar-title-wrap">
       <h1 class="page-title" style="margin:0;line-height:1.1"><?= $pageTitle ?? 'Dashboard' ?></h1>
       <div class="estate-switch" id="estate-switch">
         <button type="button" class="estate-switch-trigger" onclick="toggleEstateDropdown(event)">
