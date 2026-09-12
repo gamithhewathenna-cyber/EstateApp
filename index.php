@@ -252,6 +252,25 @@ require_once __DIR__ . '/includes/header.php';
   .range-inputs{width:100%}
   .range-inputs input[type=date]{flex:1;min-width:0}
 }
+@media(max-width:600px){
+  /* Upcoming Fertilizer/Clearing Reminders — slide scroller on phones
+     instead of stacking the two cards vertically */
+  .dash-section-grid{
+    display:flex;
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    scroll-snap-type:x proximity;
+    gap:12px;
+    padding-bottom:6px;
+  }
+  .dash-section-grid::-webkit-scrollbar{display:none}
+  .dash-section-grid > .card{
+    flex:0 0 88%;
+    min-width:88%;
+    scroll-snap-align:start;
+  }
+}
 </style>
 
 <!-- ── DATE RANGE BAR ─────────────────────────────── -->
