@@ -505,9 +505,11 @@ require_once __DIR__ . '/includes/header.php';
 
 </div>
 
-<!-- ── PERIOD SUMMARY BAR ─────────────────────────── -->
+<!-- ── PERIOD COST SUMMARY + MONTHLY ROI (side by side) ── -->
+<div class="grid-2" style="margin-bottom:20px">
+
 <?php if ($payRange['total'] > 0 || $expRange['total'] > 0): ?>
-<div class="card" style="margin-bottom:20px;border-left:4px solid var(--green-400)">
+<div class="card" style="border-left:4px solid var(--green-400)">
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
     <i class="ti ti-calculator" style="color:var(--green-600);font-size:18px"></i>
     <span style="font-size:14px;font-weight:700;color:var(--green-900)">Period Cost Summary</span>
@@ -536,8 +538,7 @@ require_once __DIR__ . '/includes/header.php';
 </div>
 <?php endif; ?>
 
-<!-- ── MONTHLY ROI ─────────────────────────────────── -->
-<div class="card" style="margin-bottom:20px;border-left:4px solid var(--green-600)">
+<div class="card" style="border-left:4px solid var(--green-600)">
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
     <i class="ti ti-percentage" style="color:var(--green-600);font-size:18px"></i>
     <span style="font-size:14px;font-weight:700;color:var(--green-900)">Monthly ROI</span>
@@ -576,6 +577,8 @@ require_once __DIR__ . '/includes/header.php';
   <div class="empty-state"><i class="ti ti-map-pin-off"></i><p>No section data for this period</p></div>
   <?php endif; ?>
 </div>
+
+</div><!-- .grid-2 (Period Cost Summary + Monthly ROI) -->
 
 <!-- ── ROW 3: TOP WORKERS + TODAY ATTENDANCE + RECENT EXPENSES ── -->
 <div class="grid-2" style="margin-bottom:20px">
