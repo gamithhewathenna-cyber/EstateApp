@@ -178,6 +178,26 @@ $sectionCosts    = DB::fetchAll("SELECT p.name,
 $maxSectionCost = max(array_column($sectionCosts,'cost') ?: [1]);
 $maxSectionKg2  = max(array_column($sectionCosts,'kg')   ?: [1]);
 
+// ── MONTHLY ROI (selected period) ───────────────────────
+// Overall Estate ROI = (Revenue − Cost) / Cost × 100.
+// Revenue = factory value (tea sold to factories this period).
+// Cost = payroll + estate expenses + factory expenses, all for the period.
+$roiRevenue = (float)($factoryValueRow['total'] ?? 0);
+$roiCost    = (float)$payRange['total'] + (float)$expRange['total'] + (float)($factoryExpenseRow['total'] ?? 0);
+$roiOverall = $roiCost > 0 ? (($roiRevenue - $roiCost) / $roiCost) * 100 : null;
+
+// Section-wise ROI: factory revenue is recorded once per day for the whole
+// estate (tea from every section is bulked together before it's sold), so
+// there's no real per-section revenue figure to use. Each section's revenue
+// is estimated proportional to its share of total KG plucked in the period
+// — the fairest available proxy given how the data is actually recorded.
+$roiTotalKg = array_sum(array_column($sectionCosts, 'kg'));
+foreach ($sectionCosts as &$roiSc) {
+    $roiSc['est_revenue'] = $roiTotalKg > 0 ? ((float)$roiSc['kg'] / $roiTotalKg) * $roiRevenue : 0;
+    $roiSc['roi'] = $roiSc['cost'] > 0 ? (($roiSc['est_revenue'] - (float)$roiSc['cost']) / (float)$roiSc['cost']) * 100 : null;
+}
+unset($roiSc);
+
 // Expense icons
 $expIcons  = ['Spray Can'=>'ti-spray','Pohora'=>'ti-leaf','Dolomite'=>'ti-mountain','Food'=>'ti-salad','Transport'=>'ti-truck','Equipment'=>'ti-tool','Miscellaneous'=>'ti-dots-circle-horizontal'];
 $expColors = ['Spray Can'=>'var(--teal-50)','Pohora'=>'var(--green-50)','Dolomite'=>'#EDE9FE','Food'=>'var(--amber-50)','Transport'=>'var(--teal-50)','Equipment'=>'var(--green-50)','Miscellaneous'=>'var(--gray-50)'];
@@ -515,6 +535,47 @@ require_once __DIR__ . '/includes/header.php';
   </div>
 </div>
 <?php endif; ?>
+
+<!-- ── MONTHLY ROI ─────────────────────────────────── -->
+<div class="card" style="margin-bottom:20px;border-left:4px solid var(--green-600)">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <i class="ti ti-percentage" style="color:var(--green-600);font-size:18px"></i>
+    <span style="font-size:14px;font-weight:700;color:var(--green-900)">Monthly ROI</span>
+    <span style="font-size:12px;color:var(--gray-400);margin-left:4px"><?= sanitize($rangeLabel) ?></span>
+  </div>
+
+  <!-- Overall Estate ROI -->
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:<?= $roiOverall === null ? 'var(--gray-50)' : ($roiOverall >= 0 ? 'var(--green-50)' : 'var(--red-50)') ?>;border-radius:var(--radius-md);padding:14px 16px;margin-bottom:16px;<?= $roiOverall !== null && $roiOverall < 0 ? 'border:1px solid #fca5a5' : '' ?>">
+    <div>
+      <div style="font-size:11px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Overall Estate ROI</div>
+      <div style="font-size:11px;color:var(--gray-400)">Revenue <?= money($roiRevenue) ?> · Cost <?= money($roiCost) ?></div>
+    </div>
+    <div style="font-size:26px;font-weight:700;color:<?= $roiOverall === null ? 'var(--gray-400)' : ($roiOverall >= 0 ? 'var(--green-700)' : 'var(--red-600)') ?>">
+      <?= $roiOverall === null ? 'N/A' : number_format($roiOverall, 1) . '%' ?>
+    </div>
+  </div>
+
+  <!-- Section-wise ROI -->
+  <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Section-wise ROI</div>
+  <?php if ($sectionCosts): ?>
+  <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+    <?php foreach ($sectionCosts as $roiRow): ?>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--gray-50);border-radius:var(--radius-md)">
+      <span style="font-size:13px;font-weight:600;color:var(--green-900)"><?= sanitize($roiRow['name']) ?></span>
+      <span style="font-size:13px;font-weight:700;color:<?= $roiRow['roi'] === null ? 'var(--gray-400)' : ($roiRow['roi'] >= 0 ? 'var(--green-700)' : 'var(--red-600)') ?>">
+        <?= $roiRow['roi'] === null ? 'N/A' : number_format($roiRow['roi'], 1) . '%' ?>
+      </span>
+    </div>
+    <?php endforeach; ?>
+  </div>
+  <div style="font-size:10px;color:var(--gray-400)">
+    <i class="ti ti-info-circle" style="font-size:11px;vertical-align:-1px"></i>
+    Section revenue is estimated from each section's share of total KG plucked — factory sales are recorded once per day for the whole estate, not per section.
+  </div>
+  <?php else: ?>
+  <div class="empty-state"><i class="ti ti-map-pin-off"></i><p>No section data for this period</p></div>
+  <?php endif; ?>
+</div>
 
 <!-- ── ROW 3: TOP WORKERS + TODAY ATTENDANCE + RECENT EXPENSES ── -->
 <div class="grid-2" style="margin-bottom:20px">
