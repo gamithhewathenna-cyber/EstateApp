@@ -116,10 +116,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect('/factory-management.php?tab=prices');
         }
         $priceMonth = date('Y-m-01', strtotime($monthIn . '-01'));
-        DB::execute("INSERT INTO factory_prices (estate_id,factory_id,price_month,price_per_kg,created_by)
-            VALUES (?,?,?,?,?)
-            ON DUPLICATE KEY UPDATE price_per_kg=?, updated_at=NOW()",
-            [$estateId, $factoryId, $priceMonth, $price, $uid, $price]);
+
+        // Receipt upload is optional — the browser already compresses it to
+        // ~500KB before it gets here, but a hard server-side cap (5MB) is
+        // kept as a safety net for browsers where that compression can't run.
+        $receiptFile = null;
+        if (!empty($_FILES['receipt']['name']) && $_FILES['receipt']['error'] === UPLOAD_ERR_OK) {
+            $ext = strtolower(pathinfo($_FILES['receipt']['name'], PATHINFO_EXTENSION));
+            $allowedExt = ['jpg', 'jpeg', 'png', 'webp'];
+            if (!in_array($ext, $allowedExt)) {
+                flash('error', 'Receipt must be a JPG, PNG or WEBP image.');
+                redirect('/factory-management.php?tab=prices');
+            }
+            if ($_FILES['receipt']['size'] > 5 * 1024 * 1024) {
+                flash('error', 'Receipt image is too large (max 5MB).');
+                redirect('/factory-management.php?tab=prices');
+            }
+            $receiptDir = __DIR__ . '/assets/img/receipts/';
+            if (!is_dir($receiptDir)) mkdir($receiptDir, 0755, true);
+            $receiptFile = 'receipt_' . $estateId . '_' . $factoryId . '_' . $priceMonth . '_' . time() . '.' . $ext;
+            if (!move_uploaded_file($_FILES['receipt']['tmp_name'], $receiptDir . $receiptFile)) {
+                $receiptFile = null;
+                flash('error', 'Price saved, but the receipt upload failed.');
+            }
+        }
+
+        $savedWithReceipt = false;
+        if ($receiptFile) {
+            // Wrapped in try/catch: if migration_factory_price_receipt.sql
+            // hasn't been run yet, fall back to saving without the receipt
+            // rather than fatal-erroring on the unknown column.
+            try {
+                DB::execute("INSERT INTO factory_prices (estate_id,factory_id,price_month,price_per_kg,receipt_file,created_by)
+                    VALUES (?,?,?,?,?,?)
+                    ON DUPLICATE KEY UPDATE price_per_kg=?, receipt_file=?, updated_at=NOW()",
+                    [$estateId, $factoryId, $priceMonth, $price, $receiptFile, $uid, $price, $receiptFile]);
+                $savedWithReceipt = true;
+            } catch (Exception $e) { $savedWithReceipt = false; }
+        }
+        if (!$savedWithReceipt) {
+            DB::execute("INSERT INTO factory_prices (estate_id,factory_id,price_month,price_per_kg,created_by)
+                VALUES (?,?,?,?,?)
+                ON DUPLICATE KEY UPDATE price_per_kg=?, updated_at=NOW()",
+                [$estateId, $factoryId, $priceMonth, $price, $uid, $price]);
+        }
         flash('success', 'Price saved.');
         [$mYear, $mNum] = explode('-', $monthIn);
         redirect('/factory-management.php?pyear=' . urlencode($mYear) . '&pmonthnum=' . urlencode($mNum) . '&tab=prices');
@@ -127,6 +167,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // ── MONTHLY PRICE: delete one entry ────────────
     if ($action === 'delete_price') {
+        try {
+            $priceRow = DB::fetchOne("SELECT receipt_file FROM factory_prices WHERE id=? AND estate_id=?", [(int)($_POST['id'] ?? 0), $estateId]);
+        } catch (Exception $e) { $priceRow = null; }
+        if (!empty($priceRow['receipt_file'])) {
+            $oldPath = __DIR__ . '/assets/img/receipts/' . $priceRow['receipt_file'];
+            if (file_exists($oldPath)) unlink($oldPath);
+        }
         DB::execute("DELETE FROM factory_prices WHERE id=? AND estate_id=?", [(int)($_POST['id'] ?? 0), $estateId]);
         flash('success', 'Price entry removed.');
         redirect('/factory-management.php?tab=prices');
@@ -183,6 +230,15 @@ try {
     DB::fetchOne("SELECT 1 FROM factory_expenses LIMIT 1", []);
 } catch (Exception $e) {
     $factoriesReady = false;
+}
+
+// Receipt upload is a smaller add-on — don't block the whole page if that
+// one migration hasn't been run yet, just hide the upload control.
+$receiptColumnReady = true;
+try {
+    DB::fetchOne("SELECT receipt_file FROM factory_prices LIMIT 1", []);
+} catch (Exception $e) {
+    $receiptColumnReady = false;
 }
 
 // Preset expense categories (Other allows free text via the description field)
@@ -1013,9 +1069,16 @@ require_once __DIR__ . '/includes/header.php';
     <div class="card-header">
       <div class="card-title"><i class="ti ti-tag"></i> Price per KG — <?= date('F Y', strtotime($priceMonthDate)) ?></div>
     </div>
+    <?php if (!$receiptColumnReady): ?>
+    <div style="background:var(--amber-50);border:1px solid var(--amber-200);border-radius:var(--radius-md);padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--amber-800)">
+      <i class="ti ti-info-circle"></i> Receipt uploads aren't enabled yet — run
+      <code style="background:#fff;padding:1px 5px;border-radius:4px">install/migration_factory_price_receipt.sql</code> to turn them on.
+    </div>
+    <?php endif; ?>
     <?php if ($factories): ?>
     <?php foreach ($factories as $f): $existing = $priceMap[$f['id']] ?? null; ?>
-    <form method="POST" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid #e8ede5;border-radius:var(--radius-md);margin-bottom:8px;background:<?= $f['is_active'] ? '#fff' : 'var(--gray-50)' ?>;flex-wrap:wrap">
+    <form method="POST" enctype="multipart/form-data" id="price-form-<?= $f['id'] ?>" onsubmit="return fmPrepareReceiptSubmit(<?= $f['id'] ?>)"
+          style="display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid #e8ede5;border-radius:var(--radius-md);margin-bottom:8px;background:<?= $f['is_active'] ? '#fff' : 'var(--gray-50)' ?>;flex-wrap:wrap">
       <input type="hidden" name="action" value="save_price">
       <input type="hidden" name="factory_id" value="<?= $f['id'] ?>">
       <input type="hidden" name="price_month" value="<?= sanitize($priceMonthSel) ?>">
@@ -1028,6 +1091,18 @@ require_once __DIR__ . '/includes/header.php';
              value="<?= $existing ? $existing['price_per_kg'] : '' ?>" placeholder="e.g. 250.00"
              style="width:120px;font-size:14px;font-weight:700;padding:6px 10px;border:1.5px solid var(--amber-200);border-radius:var(--radius-md);background:var(--amber-50);color:var(--amber-800);text-align:right">
       <span style="font-size:11px;color:var(--gray-400)">/ kg</span>
+      <?php if ($receiptColumnReady): ?>
+      <input type="file" name="receipt" accept="image/*" id="receipt-input-<?= $f['id'] ?>" style="display:none"
+             onchange="fmHandleReceiptChange(this, <?= $f['id'] ?>)">
+      <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('receipt-input-<?= $f['id'] ?>').click()" title="Attach a photo of the payment receipt">
+        <i class="ti ti-paperclip"></i> Upload Receipt
+      </button>
+      <span id="receipt-status-<?= $f['id'] ?>" style="font-size:11px;color:var(--gray-400);white-space:nowrap">
+        <?php if (!empty($existing['receipt_file'])): ?>
+          <a href="<?= BASE_URL ?>/assets/img/receipts/<?= sanitize($existing['receipt_file']) ?>" target="_blank" style="color:var(--green-600)"><i class="ti ti-file-check"></i> View receipt</a>
+        <?php endif; ?>
+      </span>
+      <?php endif; ?>
       <button type="submit" class="btn btn-primary btn-sm"><i class="ti ti-check"></i> Save</button>
     </form>
     <?php endforeach; ?>
@@ -1040,13 +1115,20 @@ require_once __DIR__ . '/includes/header.php';
     <div class="card-header"><div class="card-title"><i class="ti ti-history"></i> Price History</div></div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Month</th><th>Factory</th><th style="text-align:right">Price / KG</th><th></th></tr></thead>
+        <thead><tr><th>Month</th><th>Factory</th><th style="text-align:right">Price / KG</th><th>Receipt</th><th></th></tr></thead>
         <tbody>
           <?php foreach ($priceHistory as $ph): ?>
           <tr>
             <td><?= date('F Y', strtotime($ph['price_month'])) ?></td>
             <td><?= sanitize($ph['factory_name']) ?></td>
             <td style="text-align:right">Rs. <?= number_format($ph['price_per_kg'], 2) ?></td>
+            <td>
+              <?php if (!empty($ph['receipt_file'] ?? null)): ?>
+              <a href="<?= BASE_URL ?>/assets/img/receipts/<?= sanitize($ph['receipt_file']) ?>" target="_blank" style="color:var(--green-600);font-size:12px"><i class="ti ti-file-check"></i> View</a>
+              <?php else: ?>
+              <span style="color:var(--gray-300);font-size:12px">—</span>
+              <?php endif; ?>
+            </td>
             <td>
               <form method="POST" style="display:inline" onsubmit="return confirm('Remove this price entry?')">
                 <input type="hidden" name="action" value="delete_price">
@@ -1057,7 +1139,7 @@ require_once __DIR__ . '/includes/header.php';
           </tr>
           <?php endforeach; ?>
           <?php if (!$priceHistory): ?>
-          <tr><td colspan="4"><div class="empty-state"><i class="ti ti-tag"></i><p>No prices set yet</p></div></td></tr>
+          <tr><td colspan="5"><div class="empty-state"><i class="ti ti-tag"></i><p>No prices set yet</p></div></td></tr>
           <?php endif; ?>
         </tbody>
       </table>
@@ -1069,6 +1151,93 @@ require_once __DIR__ . '/includes/header.php';
 function fmToggleExpenseOther(sel) {
   var wrap = document.getElementById('exp-other-wrap');
   if (wrap) wrap.style.display = (sel.value === 'Other') ? 'block' : 'none';
+}
+
+// ── Receipt upload: compress client-side to ~500KB before it ever reaches
+// the server. Phone camera photos are routinely 3-10MB, so this matters a
+// lot for mobile uploads specifically. ──
+var fmReceiptCompressing = {};
+
+function fmCompressReceiptImage(file, maxKB) {
+  return new Promise(function (resolve) {
+    if (!file || !file.type || file.type.indexOf('image/') !== 0) { resolve(file); return; }
+    if (typeof FileReader === 'undefined' || typeof HTMLCanvasElement === 'undefined') { resolve(file); return; }
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      var img = new Image();
+      img.onload = function () {
+        var maxDim = 1600;
+        var w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+          else { w = Math.round(w * maxDim / h); h = maxDim; }
+        }
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+
+        var quality = 0.85;
+        (function tryEncode() {
+          canvas.toBlob(function (blob) {
+            if (!blob) { resolve(file); return; }
+            if (blob.size <= maxKB * 1024 || quality <= 0.3) {
+              var name = (file.name || 'receipt').replace(/\.[^.]+$/, '') + '.jpg';
+              try { resolve(new File([blob], name, { type: 'image/jpeg' })); }
+              catch (e) { resolve(blob); } // very old browsers without the File constructor
+            } else {
+              quality -= 0.12;
+              tryEncode();
+            }
+          }, 'image/jpeg', quality);
+        })();
+      };
+      img.onerror = function () { resolve(file); };
+      img.src = e.target.result;
+    };
+    reader.onerror = function () { resolve(file); };
+    reader.readAsDataURL(file);
+  });
+}
+
+function fmHandleReceiptChange(input, factoryId) {
+  var statusEl = document.getElementById('receipt-status-' + factoryId);
+  var file = input.files && input.files[0];
+  if (!file) return;
+  fmReceiptCompressing[factoryId] = true;
+  if (statusEl) statusEl.innerHTML = '<i class="ti ti-loader-2" style="animation:spin .6s linear infinite"></i> Compressing…';
+
+  fmCompressReceiptImage(file, 500).then(function (compressed) {
+    if (compressed && window.DataTransfer) {
+      try {
+        var dt = new DataTransfer();
+        dt.items.add(compressed);
+        input.files = dt.files;
+      } catch (e) { /* keep the original file selected if this fails */ }
+    }
+    fmReceiptCompressing[factoryId] = false;
+    var finalFile = (input.files && input.files[0]) || compressed;
+    if (statusEl) {
+      var kb = finalFile ? Math.round(finalFile.size / 1024) : 0;
+      statusEl.innerHTML = '<span style="color:var(--green-600)"><i class="ti ti-circle-check"></i> Receipt ready (' + kb + ' KB)</span>';
+    }
+  });
+}
+
+// Compression runs async on file-select; if Save is clicked before it
+// finishes, hold the submit until it's done instead of sending the
+// original, uncompressed file.
+function fmPrepareReceiptSubmit(factoryId) {
+  if (!fmReceiptCompressing[factoryId]) return true;
+  var form = document.getElementById('price-form-' + factoryId);
+  var btn = form ? form.querySelector('button[type=submit]') : null;
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin .6s linear infinite"></i> Processing…'; }
+  var wait = setInterval(function () {
+    if (!fmReceiptCompressing[factoryId]) {
+      clearInterval(wait);
+      if (form) form.submit();
+    }
+  }, 150);
+  return false;
 }
 
 function fmShowTab(id, el) {
