@@ -52,7 +52,20 @@ button, input, select, textarea { font-family: inherit; }
   position: fixed; top: 0; left: 0; height: 100vh;
   z-index: 300; transition: transform 0.25s ease;
   overflow-y: auto;
+  /* Thin, rounded, translucent scrollbar (Firefox) instead of the chunky
+     browser default — only shows up when the nav list is tall enough to
+     scroll in the first place. */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.22) transparent;
 }
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.18);
+  border-radius: 10px;
+  transition: background 0.15s;
+}
+.sidebar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.35); }
 .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 18px 14px 14px; border-bottom: 1px solid rgba(255,255,255,0.1); }
 .logo-mark { width: 36px; height: 36px; background: var(--green-400); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .logo-mark i { color: #fff; font-size: 20px; }
