@@ -385,9 +385,7 @@ require_once __DIR__ . '/includes/header.php';
   border: 1px solid #e8ede5;
   border-radius: var(--radius-lg);
   margin-bottom: 20px;
-  position: sticky;
-  top: 80px;
-  z-index: 5;
+  position: static;
   overflow: hidden;
 }
 .fm-nav {
