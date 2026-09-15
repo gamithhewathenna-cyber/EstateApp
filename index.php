@@ -400,6 +400,9 @@ require_once __DIR__ . '/includes/header.php';
             <span>· <?= sanitize($f['amount_kg']) ?> kg</span>
             <?php endif; ?>
             <span>· Last applied <?= fmtDate($f['applied_date']) ?></span>
+            <?php if (!empty($f['next_cycle_days'])): ?>
+            <span>· Cycle: <?= (int)$f['next_cycle_days'] ?> Days</span>
+            <?php endif; ?>
           </div>
         </div>
         <div style="text-align:right;flex-shrink:0">

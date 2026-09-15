@@ -568,6 +568,7 @@ body::before {
             <div class="fert-type"><?= sanitize($f['fertilizer_type']) ?>
               <?= $f['amount_kg'] ? ' · '.$f['amount_kg'].' kg' : '' ?>
               · Applied <?= fmtDate($f['applied_date']) ?>
+              <?= !empty($f['next_cycle_days']) ? ' · Cycle: '.(int)$f['next_cycle_days'].' Days' : '' ?>
             </div>
           </div>
           <div class="fert-badge <?= $cls ?>"><?= $lbl ?></div>

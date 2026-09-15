@@ -245,7 +245,8 @@ require_once __DIR__ . '/includes/header.php';
       <div class="fert-info">
         <div class="fert-name"><?= sanitize($f['plantation_name']) ?> — <?= sanitize($f['fertilizer_type']) ?></div>
         <div class="fert-date">Last: <?= fmtDate($f['applied_date']) ?>
-          <?= $f['amount_kg']?' · '.$f['amount_kg'].' kg':'' ?></div>
+          <?= $f['amount_kg']?' · '.$f['amount_kg'].' kg':'' ?>
+          <?= $f['next_cycle_days']?' · Cycle: '.(int)$f['next_cycle_days'].' Days':'' ?></div>
       </div>
       <div class="fert-due <?= $cls ?>"><?= $lbl ?></div>
     </div>
