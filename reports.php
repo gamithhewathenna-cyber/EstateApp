@@ -107,8 +107,12 @@ $finTotalKg = array_sum(array_column($finSectionPayroll, 'kg'));
 $finTotalPayroll = array_sum(array_column($finSectionPayroll, 'payroll'));
 $finTotalSectionExp = array_sum($finSectionExpByPid);
 
+// Factory costs aren't recorded per section (one factory bill covers the
+// whole estate's delivered tea), so — like income — each section's share
+// is allocated proportional to its KG plucked this month.
 foreach ($finSectionPayroll as &$fsp) {
-    $fsp['expenses']   = (float)$fsp['payroll'] + (float)($finSectionExpByPid[$fsp['id']] ?? 0);
+    $fsp['factory_exp_share'] = $finTotalKg > 0 ? ((float)$fsp['kg'] / $finTotalKg) * $finFactoryExpenses : 0;
+    $fsp['expenses']   = (float)$fsp['payroll'] + (float)($finSectionExpByPid[$fsp['id']] ?? 0) + $fsp['factory_exp_share'];
     $fsp['est_income'] = $finTotalKg > 0 ? ((float)$fsp['kg'] / $finTotalKg) * $finIncome : 0;
     $fsp['net_profit'] = $fsp['est_income'] - $fsp['expenses'];
 }
@@ -187,11 +191,11 @@ $finNetProfit      = $finIncome - $finTotalExpenses;
   </div>
   <div style="font-size:11px;color:var(--gray-400);padding:0 16px 10px">
     <i class="ti ti-info-circle" style="font-size:12px;vertical-align:-1px"></i>
-    Factory income is recorded once per day for the whole estate, so each section's income is estimated based on its share of KG plucked this month.
+    Factory income and factory costs are recorded once per day for the whole estate, so each section's share is estimated proportional to its KG plucked this month.
   </div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Section</th><th>KG Plucked</th><th>Income (est.)</th><th>Expenses</th><th>Net Profit</th></tr></thead>
+      <thead><tr><th>Section</th><th>KG Plucked</th><th>Income (est.)</th><th>Expenses (incl. factory share)</th><th>Net Profit</th></tr></thead>
       <tbody>
         <?php foreach ($finSectionPayroll as $fsp): ?>
         <tr>
@@ -205,10 +209,17 @@ $finNetProfit      = $finIncome - $finTotalExpenses;
         <?php if (!$finSectionPayroll): ?>
         <tr><td colspan="5"><div class="empty-state"><i class="ti ti-map-pin-off"></i><p>No active sections.</p></div></td></tr>
         <?php endif; ?>
-        <?php if ($finUntiedExpenses > 0 || $finFactoryExpenses > 0): ?>
+        <?php
+          // Factory costs are only split across sections when there's KG to
+          // split them by — if no section plucked anything this month, show
+          // them here instead so nothing silently goes missing from the table.
+          $finUnallocatedFactoryExp = $finTotalKg > 0 ? 0 : $finFactoryExpenses;
+          $finUnallocated = $finUntiedExpenses + $finUnallocatedFactoryExp;
+        ?>
+        <?php if ($finUnallocated > 0): ?>
         <tr style="background:var(--gray-50)">
-          <td colspan="3" style="color:var(--gray-400);font-size:12px">General &amp; factory expenses not tied to a section</td>
-          <td style="color:var(--red-600)"><?= money($finUntiedExpenses + $finFactoryExpenses) ?></td>
+          <td colspan="3" style="color:var(--gray-400);font-size:12px">General expenses not tied to a section<?= $finUnallocatedFactoryExp>0?' (incl. factory costs — no KG recorded to split by)':'' ?></td>
+          <td style="color:var(--red-600)"><?= money($finUnallocated) ?></td>
           <td></td>
         </tr>
         <?php endif; ?>
