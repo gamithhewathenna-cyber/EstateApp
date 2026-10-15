@@ -247,112 +247,6 @@ if ($tab === 'range') {
 $totalPay = array_sum(array_column(array_filter($assignments, fn($a)=>($a['approval_status']??'approved')==='approved'), 'payment'));
 $totalKg  = array_sum(array_column(array_filter($assignments, fn($a)=>(strtolower($a['unit_label']??'')==='kg') && ($a['approval_status']??'approved')==='approved'), 'quantity'));
 
-// ── COST TRACKING DATA (for costs tab) ──────────────
-$selCostSectionRaw = $_GET['section'] ?? 'all';
-$selCostSection = ($selCostSectionRaw === 'all' || $selCostSectionRaw === '') ? 'all' : (int)$selCostSectionRaw;
-$selCostPeriod  = $_GET['period'] ?? 'month';
-$selCostMonth   = $_GET['cmonth'] ?? date('Y-m');
-$selCostYear    = $_GET['cyear']  ?? date('Y');
-
-if ($tab === 'costs' && $isAdmin) {
-    // Section options
-    $costSections = DB::fetchAll("SELECT * FROM plantations WHERE estate_id=? AND is_active=1 ORDER BY name", [$estateId]);
-
-    if ($selCostSection) {
-        // Build WHERE clause dynamically based on section selection
-        $sectionWhere  = ($selCostSection === 'all') ? '' : 'AND da.plantation_id=?';
-        $sectionParams = ($selCostSection === 'all') ? [] : [$selCostSection];
-
-        // Weekly breakdown this month
-        $weeklyData = DB::fetchAll("SELECT
-            WEEK(assignment_date, 1) as week_num,
-            DATE_FORMAT(DATE_SUB(MIN(assignment_date), INTERVAL (WEEKDAY(MIN(assignment_date))) DAY), '%Y-%m-%d') as week_start,
-            DATE_FORMAT(DATE_ADD(DATE_SUB(MIN(assignment_date), INTERVAL (WEEKDAY(MIN(assignment_date))) DAY), INTERVAL 6 DAY), '%Y-%m-%d') as week_end,
-            COALESCE(SUM(CASE WHEN wt.estate_id=? AND LOWER(wt.unit_label)='kg' THEN da.payment ELSE 0 END),0) as plucking_cost,
-            COALESCE(SUM(CASE WHEN wt.estate_id=? AND LOWER(wt.unit_label)='kg' THEN da.quantity ELSE 0 END),0) as plucking_kg,
-            COALESCE(SUM(CASE WHEN wt.estate_id=? AND LOWER(wt.unit_label)!='kg' THEN da.payment ELSE 0 END),0) as other_cost,
-            COALESCE(SUM(da.payment),0) as total_cost,
-            COUNT(DISTINCT CASE WHEN da.worker_id IS NOT NULL THEN da.worker_id END) as workers
-            FROM daily_assignments da
-            JOIN work_types wt ON da.work_type_id = wt.id
-            WHERE da.estate_id=? $sectionWhere AND da.approval_status='approved'
-            AND DATE_FORMAT(da.assignment_date,'%Y-%m')=?
-            GROUP BY WEEK(assignment_date, 1)
-            ORDER BY week_num ASC",
-            array_merge([$estateId,$estateId,$estateId,$estateId], $sectionParams, [$selCostMonth]));
-
-        // Expenses per week — include section expenses AND general (no section) expenses.
-        // Only Food expenses count toward assignment cost reports, and only when we paid for it
-        // (owner/client-provided food is logged for record-keeping but excluded here).
-        $weeklyExpenses = DB::fetchAll("SELECT
-            WEEK(expense_date, 1) as week_num,
-            expense_type,
-            COALESCE(SUM(amount),0) as total
-            FROM expenses
-            WHERE estate_id=?
-            AND (plantation_id=? OR plantation_id IS NULL OR plantation_id=0)
-            AND DATE_FORMAT(expense_date,'%Y-%m')=?
-            AND expense_type='Food' AND food_provided_by='us'
-            GROUP BY WEEK(expense_date,1), expense_type
-            ORDER BY week_num, expense_type", [$estateId,$selCostSection,$selCostMonth]);
-
-        // Index expenses by week_num
-        $expByWeek = [];
-        foreach ($weeklyExpenses as $ex) {
-            $expByWeek[$ex['week_num']][] = $ex;
-        }
-        $totalExpenses = DB::fetchOne("SELECT COALESCE(SUM(amount),0) as total FROM expenses
-            WHERE estate_id=?
-            AND (plantation_id=? OR plantation_id IS NULL OR plantation_id=0)
-            AND DATE_FORMAT(expense_date,'%Y-%m')=?
-            AND expense_type='Food' AND food_provided_by='us'",
-            [$estateId,$selCostSection,$selCostMonth]);
-
-        // Monthly breakdown this year
-        $monthlyData = DB::fetchAll("SELECT
-            DATE_FORMAT(assignment_date,'%Y-%m') as month,
-            COALESCE(SUM(CASE WHEN wt.estate_id=? AND LOWER(wt.unit_label)='kg' THEN da.payment ELSE 0 END),0) as plucking_cost,
-            COALESCE(SUM(CASE WHEN wt.estate_id=? AND LOWER(wt.unit_label)='kg' THEN da.quantity ELSE 0 END),0) as plucking_kg,
-            COALESCE(SUM(CASE WHEN wt.estate_id=? AND LOWER(wt.unit_label)!='kg' THEN da.payment ELSE 0 END),0) as other_cost,
-            COALESCE(SUM(da.payment),0) as total_cost,
-            COUNT(DISTINCT CASE WHEN da.worker_id IS NOT NULL THEN da.worker_id END) as workers
-            FROM daily_assignments da
-            JOIN work_types wt ON da.work_type_id = wt.id
-            WHERE da.estate_id=? $sectionWhere AND da.approval_status='approved'
-            AND YEAR(assignment_date)=?
-            GROUP BY DATE_FORMAT(assignment_date,'%Y-%m')
-            ORDER BY month ASC",
-            array_merge([$estateId,$estateId,$estateId,$estateId], $sectionParams, [$selCostYear]));
-
-        // Work type breakdown this month
-        $workTypeBreakdown = DB::fetchAll("SELECT
-            wt.name as work_type, wt.unit_label,
-            COALESCE(SUM(da.quantity),0) as total_qty,
-            COALESCE(SUM(da.payment),0) as total_cost,
-            COUNT(*) as records
-            FROM daily_assignments da
-            JOIN work_types wt ON da.work_type_id = wt.id
-            WHERE da.estate_id=? $sectionWhere AND da.approval_status='approved'
-            AND DATE_FORMAT(da.assignment_date,'%Y-%m')=?
-            GROUP BY da.work_type_id ORDER BY total_cost DESC",
-            array_merge([$estateId], $sectionParams, [$selCostMonth]));
-
-        // Section grand total this month
-        $sectionTotal = DB::fetchOne("SELECT
-            COALESCE(SUM(da.payment),0) as total,
-            COALESCE(SUM(CASE WHEN LOWER(wt.unit_label)='kg' THEN da.payment ELSE 0 END),0) as plucking,
-            COALESCE(SUM(CASE WHEN LOWER(wt.unit_label)='kg' THEN da.quantity ELSE 0 END),0) as kg,
-            COALESCE(SUM(CASE WHEN LOWER(wt.unit_label)!='kg' THEN da.payment ELSE 0 END),0) as other
-            FROM daily_assignments da JOIN work_types wt ON da.work_type_id=wt.id
-            WHERE da.estate_id=? $sectionWhere AND da.approval_status='approved'
-            AND DATE_FORMAT(da.assignment_date,'%Y-%m')=?",
-            array_merge([$estateId], $sectionParams, [$selCostMonth]));
-    } else {
-        $weeklyData = $monthlyData = $workTypeBreakdown = [];
-        $sectionTotal = null;
-    }
-}
-
 require_once __DIR__ . '/includes/header.php';
 ?>
 
@@ -406,19 +300,6 @@ require_once __DIR__ . '/includes/header.php';
   white-space: nowrap; text-decoration: none; text-align: center;
   min-width: 0;
 }
-
-/* Cost summary 4-col → 2-col → 1-col */
-.cost-summary-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 16px; }
-
-/* PDF print buttons always wrap */
-.cost-print-buttons { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; align-items: center; }
-
-/* Work-type breakdown bar rows */
-.wt-bar-row   { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-.wt-bar-label { width: 110px; font-size: 12px; font-weight: 600; color: var(--green-900); flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.wt-bar-track { flex: 1; height: 24px; background: var(--gray-100); border-radius: 4px; overflow: hidden; }
-.wt-bar-amount{ width: 90px; text-align: right; font-size: 12px; font-weight: 700; color: var(--green-700); flex-shrink: 0; }
-.wt-bar-qty   { width: 70px; text-align: right; font-size: 11px; color: var(--gray-400); flex-shrink: 0; }
 
 /* ── TABLET LANDSCAPE (≤1000px) ── */
 @media (max-width: 1000px) {
@@ -537,44 +418,13 @@ require_once __DIR__ . '/includes/header.php';
   #bulk-bar { flex-direction: column; align-items: stretch !important; }
   #bulk-bar form { flex-direction: column; gap: 8px !important; }
   #bulk-bar .btn { width: 100%; justify-content: center; }
-
-  /* ── COST REPORT ── */
-  .cost-summary-grid { grid-template-columns: 1fr 1fr; }
-
-  /* Work-type breakdown bars — stack label on top */
-  .wt-bar-label { width: 100% !important; font-size: 11px !important; margin-bottom: 2px; }
-  .wt-bar-row   { flex-wrap: wrap; gap: 4px 8px; }
-  .wt-bar-qty   { display: none !important; }
-  .wt-bar-amount{ width: auto !important; }
-
-  /* Weekly breakdown — hide less-critical columns */
-  .weekly-table th:nth-child(3), .weekly-table td:nth-child(3),
-  .weekly-table th:nth-child(4), .weekly-table td:nth-child(4),
-  .weekly-table th:nth-child(5), .weekly-table td:nth-child(5),
-  .weekly-table th:nth-child(7), .weekly-table td:nth-child(7) { display: none !important; }
-
-  /* Monthly trend — hide less-critical columns */
-  .monthly-table th:nth-child(3), .monthly-table td:nth-child(3),
-  .monthly-table th:nth-child(4), .monthly-table td:nth-child(4),
-  .monthly-table th:nth-child(6), .monthly-table td:nth-child(6) { display: none !important; }
-
-  /* Both cost tables: a bare width:100% table just squishes on narrow
-     screens instead of scrolling. Give it a sane minimum width and stop
-     cell text from wrapping, so the parent's overflow-x:auto (see the
-     wrapping div's inline style) actually kicks in when needed instead of
-     the numbers getting cramped or clipped. */
-  .weekly-table, .monthly-table { min-width: 380px; }
-  .weekly-table th, .weekly-table td,
-  .monthly-table th, .monthly-table td { padding: 6px 8px !important; white-space: nowrap; }
 }
 
 /* ── SMALL PHONE (≤400px) ── */
 @media (max-width: 400px) {
   .work-type-grid { grid-template-columns: 1fr 1fr !important; }
   .assign-item { font-size: 11px; }
-  .cost-summary-grid { grid-template-columns: 1fr; }
   .assign-tabs .tab-btn { font-size: 10px; padding: 5px 8px; }
-  .weekly-table, .monthly-table { min-width: 300px; }
 
   /* Temporary worker rows (built via JS with inline styles) — the name
      input's inline min-width:140px plus the qty input/badge/remove button
@@ -794,9 +644,6 @@ require_once __DIR__ . '/includes/header.php';
         <span style="background:var(--red-400);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:20px;margin-left:4px"><?= $pendingCount ?></span>
         <?php endif; ?>
       </a>
-      <a class="tab-btn <?= $tab==='costs'?'active':'' ?>" href="assignments.php?tab=costs">
-        <i class="ti ti-chart-bar" style="font-size:13px;vertical-align:-2px"></i> Cost Report
-      </a>
       <?php endif; ?>
     </div>
 
@@ -839,7 +686,7 @@ require_once __DIR__ . '/includes/header.php';
     <?php endif; ?>
 
     <!-- SUMMARY PILLS -->
-    <?php if ($tab !== 'pending' && $tab !== 'costs'): ?>
+    <?php if ($tab !== 'pending'): ?>
     <div class="summary-pills" style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
       <span class="pill pill-green"><i class="ti ti-users" style="font-size:12px"></i> <?= count(array_unique(array_column($assignments,'worker_id'))) ?> workers</span>
       <span class="pill pill-teal"><i class="ti ti-weight" style="font-size:12px"></i> <?= number_format($totalKg,1) ?> kg</span>
@@ -1125,227 +972,6 @@ require_once __DIR__ . '/includes/header.php';
     <?php endif; ?>
 
     </div><!-- scroll wrap -->
-
-    <?php if ($tab === 'costs' && $isAdmin): ?>
-    <!-- ── COST TRACKING TAB ── -->
-    <div style="padding:4px 0">
-      <!-- Section + Period selectors -->
-      <form method="GET" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-end">
-        <input type="hidden" name="tab" value="costs">
-        <div style="flex:1;min-width:150px">
-          <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Section</div>
-          <select name="section" onchange="this.form.submit()" style="width:100%;font-size:13px;padding:7px 10px;border:1px solid #d8ddd5;border-radius:var(--radius-md)">
-            <option value="all" <?= $selCostSection==='all'||$selCostSection==0?'selected':'' ?>>🌿 All Sections</option>
-            <?php foreach ($costSections as $s): ?>
-            <option value="<?= $s['id'] ?>" <?= $selCostSection==$s['id']?'selected':'' ?>><?= sanitize($s['name']) ?></option>
-            <?php endforeach; ?>
-          </select>
-        </div>
-        <div style="flex:1;min-width:130px">
-          <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Month</div>
-          <input type="month" name="cmonth" value="<?= $selCostMonth ?>" onchange="this.form.submit()"
-                 style="width:100%;font-size:13px;padding:7px 10px;border:1px solid #d8ddd5;border-radius:var(--radius-md)">
-        </div>
-        <div style="flex:1;min-width:90px">
-          <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Year</div>
-          <input type="number" name="cyear" value="<?= $selCostYear ?>" min="2020" max="2099" onchange="this.form.submit()"
-                 style="width:100%;font-size:13px;padding:7px 10px;border:1px solid #d8ddd5;border-radius:var(--radius-md)">
-        </div>
-      </form>
-
-      <?php if ($selCostSection): ?>
-      <div class="cost-print-buttons" style="margin-bottom:14px">
-        <a href="cost-report-pdf.php?section=<?= urlencode($selCostSectionRaw) ?>&month=<?= $selCostMonth ?>"
-           target="_blank"
-           class="btn btn-primary btn-sm" style="display:inline-flex;align-items:center;gap:6px">
-          <i class="ti ti-printer"></i> Print / PDF Report
-        </a>
-        <?php foreach(($weeklyData??[]) as $i=>$wk): ?>
-        <a href="cost-report-pdf.php?section=<?= urlencode($selCostSectionRaw) ?>&month=<?= $selCostMonth ?>&week=<?= $wk['week_num'] ?>"
-           target="_blank"
-           class="btn btn-outline btn-sm" style="font-size:11px">
-          Week <?= $i+1 ?> (Mon <?= date('d M', strtotime($wk['week_start'])) ?> – Sun <?= date('d M', strtotime($wk['week_end'])) ?>)
-        </a>
-        <?php endforeach; ?>
-      </div>
-      <?php endif; ?>
-
-      <?php if (!$selCostSection && $selCostSection !== 'all'): ?>
-      <div class="empty-state">
-        <i class="ti ti-map-pin"></i>
-        <p>Select a section above to view cost details</p>
-      </div>
-
-      <?php else: ?>
-
-      <!-- Monthly Summary pills -->
-      <?php if ($sectionTotal): ?>
-      <div class="cost-summary-grid">
-        <?php foreach([
-          ['Total Cost',    money($sectionTotal['total']),   'var(--green-600)', 'ti-cash',   'var(--green-50)'],
-          ['Tea Plucking',  money($sectionTotal['plucking']),'var(--teal-600)',  'ti-weight', 'var(--teal-50)'],
-          ['Total KG',      number_format($sectionTotal['kg'],1).' kg','var(--green-700)','ti-leaf','var(--green-50)'],
-          ['Other Work',    money($sectionTotal['other']),   'var(--amber-600)', 'ti-briefcase','var(--amber-50)'],
-        ] as [$lbl,$val,$clr,$ico,$bg]):?>
-        <div style="background:<?= $bg ?>;border-radius:var(--radius-md);padding:12px 14px;text-align:center;border:1px solid <?= $bg ?>">
-          <i class="ti <?= $ico ?>" style="font-size:18px;color:<?= $clr ?>"></i>
-          <div style="font-size:16px;font-weight:800;color:<?= $clr ?>;margin-top:4px"><?= $val ?></div>
-          <div style="font-size:10px;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-top:2px"><?= $lbl ?></div>
-        </div>
-        <?php endforeach; ?>
-      </div>
-      <?php endif; ?>
-
-      <!-- Work Type Breakdown -->
-      <?php if ($workTypeBreakdown): ?>
-      <div style="margin-bottom:16px">
-        <div style="font-size:12px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">
-          <i class="ti ti-tools" style="color:var(--green-500)"></i> Work Type Breakdown — <?= date('F Y', strtotime($selCostMonth.'-01')) ?>
-        </div>
-        <?php
-          $maxCost = max(array_column($workTypeBreakdown,'total_cost') ?: [1]);
-          $wtColors = ['var(--green-500)','var(--teal-500)','var(--amber-500)','#6D28D9','#1e40af','#e11d48'];
-        ?>
-        <?php foreach ($workTypeBreakdown as $i => $wt): ?>
-        <div class="wt-bar-row">
-          <div class="wt-bar-label"><?= sanitize($wt['work_type']) ?></div>
-          <div class="wt-bar-track">
-            <div style="height:100%;width:<?= $maxCost>0?round($wt['total_cost']/$maxCost*100):0 ?>%;background:<?= $wtColors[$i%count($wtColors)] ?>;border-radius:4px;transition:width .4s;display:flex;align-items:center;padding-left:8px">
-              <?php if ($maxCost>0 && $wt['total_cost']/$maxCost > 0.15): ?>
-              <span style="font-size:10px;font-weight:700;color:#fff"><?= money($wt['total_cost']) ?></span>
-              <?php endif; ?>
-            </div>
-          </div>
-          <div class="wt-bar-amount"><?= money($wt['total_cost']) ?></div>
-          <div class="wt-bar-qty"><?= number_format($wt['total_qty'],1) ?> <?= sanitize($wt['unit_label']) ?></div>
-        </div>
-        <?php endforeach; ?>
-      </div>
-      <?php endif; ?>
-
-      <!-- Weekly Breakdown -->
-      <?php if ($weeklyData): ?>
-      <div style="margin-bottom:16px">
-        <div style="font-size:12px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">
-          <i class="ti ti-calendar-week" style="color:var(--green-500)"></i> Weekly Breakdown — <?= date('F Y', strtotime($selCostMonth.'-01')) ?>
-        </div>
-        <div style="background:#fff;border:1px solid #e8ede5;border-radius:var(--radius-md);overflow-x:auto;-webkit-overflow-scrolling:touch">
-        <table class="weekly-table" style="width:100%;border-collapse:collapse;font-size:12px">
-          <thead>
-            <tr style="background:var(--green-50)">
-              <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--green-700);border-bottom:1px solid #e8ede5">Week</th>
-              <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:700;color:var(--green-700);border-bottom:1px solid #e8ede5">Plucking KG</th>
-              <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:700;color:var(--green-700);border-bottom:1px solid #e8ede5">Plucking Cost</th>
-              <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:700;color:var(--green-700);border-bottom:1px solid #e8ede5">Other Work</th>
-              <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:700;color:var(--amber-600);border-bottom:1px solid #e8ede5">Food Expenses</th>
-              <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:700;color:var(--green-700);border-bottom:1px solid #e8ede5">Total Cost</th>
-              <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:700;color:var(--green-700);border-bottom:1px solid #e8ede5">Workers</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($weeklyData as $w): ?>
-            <tr style="border-bottom:1px solid #f0f0eb" onmouseover="this.style.background='var(--green-50)'" onmouseout="this.style.background=''">
-              <td style="padding:9px 12px">
-                <div style="font-weight:700;color:var(--green-900)">Week <?= date('W', strtotime($w['week_start'])) ?></div>
-                <div style="font-size:10px;color:var(--gray-400)">
-                  Mon <?= date('d M', strtotime($w['week_start'])) ?> – Sun <?= date('d M', strtotime($w['week_end'])) ?>
-                </div>
-              </td>
-              <td style="padding:9px 12px;text-align:right;color:var(--teal-700);font-weight:600"><?= number_format($w['plucking_kg'],1) ?> kg</td>
-              <td style="padding:9px 12px;text-align:right;color:var(--green-700);font-weight:700"><?= money($w['plucking_cost']) ?></td>
-              <td style="padding:9px 12px;text-align:right;color:var(--amber-700);font-weight:600"><?= money($w['other_cost']) ?></td>
-              <td style="padding:9px 12px;text-align:right;color:var(--amber-600);font-weight:600">
-                <?php
-                  $wkExp = array_sum(array_column($expByWeek[$w['week_num']] ?? [], 'total'));
-                  echo $wkExp > 0 ? money($wkExp) : '—';
-                ?>
-              </td>
-              <td style="padding:9px 12px;text-align:right;color:var(--green-900);font-weight:800;font-size:13px">
-                <?php $wkExp2 = array_sum(array_column($expByWeek[$w['week_num']] ?? [], 'total')); ?>
-                <?= money($w['total_cost'] + $wkExp2) ?>
-              </td>
-              <td style="padding:9px 12px;text-align:right;color:var(--gray-500)"><?= $w['workers'] ?></td>
-            </tr>
-            <?php endforeach; ?>
-          </tbody>
-          <tfoot>
-            <tr style="background:var(--green-50)">
-              <td style="padding:9px 12px;font-weight:700;color:var(--green-900)">Monthly Total</td>
-              <td style="padding:9px 12px;text-align:right;font-weight:700;color:var(--teal-700)"><?= number_format(array_sum(array_column($weeklyData,'plucking_kg')),1) ?> kg</td>
-              <td style="padding:9px 12px;text-align:right;font-weight:700;color:var(--green-700)"><?= money(array_sum(array_column($weeklyData,'plucking_cost'))) ?></td>
-              <td style="padding:9px 12px;text-align:right;font-weight:700;color:var(--amber-700)"><?= money(array_sum(array_column($weeklyData,'other_cost'))) ?></td>
-              <td style="padding:9px 12px;text-align:right;font-weight:700;color:var(--amber-600)"><?= money($totalExpenses['total']??0) ?></td>
-              <td style="padding:9px 12px;text-align:right;font-weight:800;color:var(--green-900);font-size:13px"><?= money(array_sum(array_column($weeklyData,'total_cost')) + ($totalExpenses['total']??0)) ?></td>
-              <td></td>
-            </tr>
-          </tfoot>
-        </table>
-        </div>
-      </div>
-      <?php endif; ?>
-
-      <!-- Monthly Trend -->
-      <?php if ($monthlyData): ?>
-      <div>
-        <div style="font-size:12px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">
-          <i class="ti ti-chart-line" style="color:var(--green-500)"></i> Monthly Trend — <?= $selCostYear ?>
-        </div>
-        <div style="background:#fff;border:1px solid #e8ede5;border-radius:var(--radius-md);overflow-x:auto;-webkit-overflow-scrolling:touch">
-        <table class="monthly-table" style="width:100%;border-collapse:collapse;font-size:12px">
-          <thead>
-            <tr style="background:var(--green-50)">
-              <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--green-700);border-bottom:1px solid #e8ede5">Month</th>
-              <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:700;color:var(--green-700);border-bottom:1px solid #e8ede5">Plucking KG</th>
-              <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:700;color:var(--green-700);border-bottom:1px solid #e8ede5">Plucking Cost</th>
-              <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:700;color:var(--green-700);border-bottom:1px solid #e8ede5">Other Work</th>
-              <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:700;color:var(--green-700);border-bottom:1px solid #e8ede5">Total Cost</th>
-              <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:700;color:var(--green-700);border-bottom:1px solid #e8ede5">Cost/KG</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($monthlyData as $m):
-              $cpk = $m['plucking_kg']>0 ? $m['plucking_cost']/$m['plucking_kg'] : 0;
-              $isCurrentMonth = ($m['month'] === date('Y-m'));
-            ?>
-            <tr style="border-bottom:1px solid #f0f0eb;<?= $isCurrentMonth?'background:var(--green-50);':'' ?>"
-                onmouseover="this.style.background='var(--green-50)'" onmouseout="this.style.background='<?= $isCurrentMonth?'var(--green-50)':'#fff' ?>'">
-              <td style="padding:9px 12px">
-                <div style="font-weight:700;color:var(--green-900)"><?= date('F', strtotime($m['month'].'-01')) ?></div>
-                <?php if ($isCurrentMonth): ?><div style="font-size:10px;color:var(--green-500);font-weight:600">Current</div><?php endif; ?>
-              </td>
-              <td style="padding:9px 12px;text-align:right;color:var(--teal-700);font-weight:600"><?= number_format($m['plucking_kg'],1) ?> kg</td>
-              <td style="padding:9px 12px;text-align:right;color:var(--green-700);font-weight:700"><?= money($m['plucking_cost']) ?></td>
-              <td style="padding:9px 12px;text-align:right;color:var(--amber-700);font-weight:600"><?= money($m['other_cost']) ?></td>
-              <td style="padding:9px 12px;text-align:right;color:var(--green-900);font-weight:800;font-size:13px"><?= money($m['total_cost']) ?></td>
-              <td style="padding:9px 12px;text-align:right;color:var(--gray-600);font-size:11px"><?= $cpk>0 ? 'Rs.'.number_format($cpk,2).'/kg' : '—' ?></td>
-            </tr>
-            <?php endforeach; ?>
-          </tbody>
-          <tfoot>
-            <tr style="background:var(--green-50)">
-              <td style="padding:9px 12px;font-weight:700;color:var(--green-900)">Year Total</td>
-              <td style="padding:9px 12px;text-align:right;font-weight:700;color:var(--teal-700)"><?= number_format(array_sum(array_column($monthlyData,'plucking_kg')),1) ?> kg</td>
-              <td style="padding:9px 12px;text-align:right;font-weight:700;color:var(--green-700)"><?= money(array_sum(array_column($monthlyData,'plucking_cost'))) ?></td>
-              <td style="padding:9px 12px;text-align:right;font-weight:700;color:var(--amber-700)"><?= money(array_sum(array_column($monthlyData,'other_cost'))) ?></td>
-              <td style="padding:9px 12px;text-align:right;font-weight:800;color:var(--green-900);font-size:13px"><?= money(array_sum(array_column($monthlyData,'total_cost'))) ?></td>
-              <td style="padding:9px 12px;text-align:right;color:var(--gray-500)">
-                <?php $totKg=array_sum(array_column($monthlyData,'plucking_kg')); $totPl=array_sum(array_column($monthlyData,'plucking_cost')); ?>
-                <?= $totKg>0 ? 'Rs.'.number_format($totPl/$totKg,2).'/kg' : '—' ?>
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-        </div>
-      </div>
-      <?php endif; ?>
-
-      <?php if (!$weeklyData && !$monthlyData && $selCostSection): ?>
-      <div class="empty-state"><i class="ti ti-chart-bar-off"></i><p>No data found for selected section and period</p></div>
-      <?php endif; ?>
-
-      <?php endif; // end selCostSection ?>
-    </div>
-    <?php endif; // end costs tab ?>
 
     <?php if ($tab !== 'pending'): ?>
     <div class="assign-total" style="margin-top:8px">
