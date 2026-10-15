@@ -215,10 +215,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $name  = trim($_POST['wt_name']  ?? '');
         $unit  = trim($_POST['wt_unit']  ?? 'Unit');
         $rate  = (float)($_POST['wt_rate']  ?? 0);
+        $payType = ($_POST['wt_payment_type'] ?? 'per_unit') === 'fixed' ? 'fixed' : 'per_unit';
         $desc  = trim($_POST['wt_desc']  ?? '');
         if (!$name || $rate < 0) { flash('error','Work type name and rate are required.'); redirect('/settings.php#worktypes'); }
-        DB::insert("INSERT INTO work_types (estate_id, name, unit_label, rate_per_unit, description, is_active) VALUES (?,?,?,?,?,1)",
-            [$estateId, $name, $unit ?: 'Unit', $rate, $desc]);
+        DB::insert("INSERT INTO work_types (estate_id, name, unit_label, rate_per_unit, payment_type, description, is_active) VALUES (?,?,?,?,?,?,1)",
+            [$estateId, $name, $unit ?: 'Unit', $rate, $payType, $desc]);
         flash('success', 'Work type "' . $name . '" added.');
         redirect('/settings.php#worktypes');
     }
@@ -229,8 +230,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $rate = (float)($_POST['wt_rate'] ?? 0);
         $name = trim($_POST['wt_name']  ?? '');
         $unit = trim($_POST['wt_unit']  ?? '');
+        $payType = ($_POST['wt_payment_type'] ?? 'per_unit') === 'fixed' ? 'fixed' : 'per_unit';
         if (!$id) { flash('error','Invalid work type.'); redirect('/settings.php#worktypes'); }
-        DB::execute("UPDATE work_types SET rate_per_unit=?, name=?, unit_label=? WHERE id=? AND estate_id=?", [$rate, $name, $unit, $id, $estateId]);
+        DB::execute("UPDATE work_types SET rate_per_unit=?, name=?, unit_label=?, payment_type=? WHERE id=? AND estate_id=?", [$rate, $name, $unit, $payType, $id, $estateId]);
         flash('success', 'Work type updated. New rate applies to future assignments only.');
         redirect('/settings.php#worktypes');
     }
@@ -864,10 +866,15 @@ require_once __DIR__ . '/includes/header.php';
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <input type="text" name="wt_unit" value="<?= sanitize($wt['unit_label']) ?>"
                  style="width:70px;font-size:12px;padding:5px 8px;border:1px solid #e8ede5;border-radius:6px;text-align:center" title="Unit label">
+          <select name="wt_payment_type" title="Payment type"
+                  style="font-size:11px;padding:5px 6px;border:1px solid #e8ede5;border-radius:6px;color:var(--gray-600)">
+            <option value="per_unit" <?= ($wt['payment_type']??'per_unit')==='per_unit'?'selected':'' ?>>Per Unit</option>
+            <option value="fixed"    <?= ($wt['payment_type']??'per_unit')==='fixed'?'selected':'' ?>>Fixed Amount</option>
+          </select>
           <span style="font-size:12px;color:var(--gray-400)">Rs.</span>
           <input type="number" name="wt_rate" value="<?= $wt['rate_per_unit'] ?>" min="0" step="0.01" required
                  style="width:100px;font-size:14px;font-weight:700;padding:6px 10px;border:1.5px solid var(--amber-200);border-radius:var(--radius-md);background:var(--amber-50);color:var(--amber-800);text-align:right">
-          <span style="font-size:11px;color:var(--gray-400);white-space:nowrap">/ <?= sanitize($wt['unit_label']) ?></span>
+          <span style="font-size:11px;color:var(--gray-400);white-space:nowrap"><?= ($wt['payment_type']??'per_unit')==='fixed' ? 'fixed / worker' : '/ '.sanitize($wt['unit_label']) ?></span>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0">
           <button type="submit" class="btn btn-primary btn-sm" title="Save changes">
@@ -912,7 +919,15 @@ require_once __DIR__ . '/includes/header.php';
             <div style="font-size:11px;color:var(--gray-400);margin-top:3px">What you measure (KG, Day, Unit, Tank, Tree...). Tank/Tree types get a manual per-worker quantity input, like Tank Spraying.</div>
           </div>
           <div class="form-group">
-            <label>Rate per Unit (Rs.) *</label>
+            <label>Payment Type *</label>
+            <select name="wt_payment_type">
+              <option value="per_unit">Per Unit (quantity × rate)</option>
+              <option value="fixed">Fixed Amount (flat pay per worker)</option>
+            </select>
+            <div style="font-size:11px;color:var(--gray-400);margin-top:3px">Fixed Amount pays the same amount per worker no matter the quantity entered — e.g. Rs. 1500 flat for Tea Plucking, while the actual KG is still recorded for production reports.</div>
+          </div>
+          <div class="form-group">
+            <label>Rate per Unit / Fixed Amount (Rs.) *</label>
             <input type="number" name="wt_rate" placeholder="e.g. 500" min="0" step="0.01" required>
           </div>
           <div class="form-group">

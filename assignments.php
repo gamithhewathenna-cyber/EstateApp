@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect('/assignments.php?date=' . $date);
         }
         if (empty($wids)) $wids = []; // temp-only — skip regular worker loop
-        $wt      = DB::fetchOne("SELECT rate_per_unit, id, unit_label, name FROM work_types WHERE id=?", [$wtid]);
+        $wt      = DB::fetchOne("SELECT rate_per_unit, id, unit_label, name, payment_type FROM work_types WHERE id=?", [$wtid]);
         $rate    = $wt ? (float)$wt['rate_per_unit'] : 0;
         // Detect by unit_label — works across all estates regardless of ID
         $wtUnit       = strtolower(trim($wt['unit_label'] ?? ''));
@@ -39,6 +39,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $isPluckingWT = ($wtUnit === 'kg');                          // KG = plucking
         $isSprayingWT = in_array($wtUnit, ['tank','tanks','tree','trees']); // Tank/Tree = manual per-worker qty
         $isAutoUnit   = (!$isPluckingWT && !$isSprayingWT);           // Day/Unit = auto
+        // Fixed Amount work types (e.g. Tea Plucking paid a flat Rs. per worker)
+        // pay the same amount regardless of quantity — the quantity (KG) is
+        // still recorded as-is for production reports.
+        $isFixedPay   = (($wt['payment_type'] ?? 'per_unit') === 'fixed');
 
         $approvalStatus = $isAdmin ? 'approved' : 'pending';
         $approvedBy     = $isAdmin ? $uid : null;
@@ -62,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ? (float)$_POST['worker_qty'][$wid] : (float)($qty ?: 0);
                 if ($workerQty <= 0) continue; // skip workers with no KG entered
             }
-            $payment = round($workerQty * $rate, 2);
+            $payment = $isFixedPay ? $rate : round($workerQty * $rate, 2);
             DB::insert("INSERT INTO daily_assignments
                 (estate_id,assignment_date,worker_id,plantation_id,work_type_id,quantity,rate,payment,notes,created_by,payment_status,approval_status,approved_by,approved_at)
                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
@@ -91,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($tempQty <= 0) continue;
             }
 
-            $tempPayment = round($tempQty * $rate, 2);
+            $tempPayment = $isFixedPay ? $rate : round($tempQty * $rate, 2);
 
             // Save with worker_id = 0 (temp), store name in notes prefixed with TEMP:
             DB::insert("INSERT INTO daily_assignments
@@ -121,8 +125,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $qty        = (float)($_POST['quantity'] ?? 0);
         $notes      = trim($_POST['notes'] ?? '');
         $manualRate = (float)($_POST['rate'] ?? 0);
-        $rate       = $manualRate > 0 ? $manualRate : (float)(DB::fetchOne("SELECT rate_per_unit FROM work_types WHERE id=?",[$wtid])['rate_per_unit'] ?? 0);
-        $payment    = round($qty * $rate, 2);
+        $editWt     = DB::fetchOne("SELECT rate_per_unit, payment_type FROM work_types WHERE id=?", [$wtid]);
+        $rate       = $manualRate > 0 ? $manualRate : (float)($editWt['rate_per_unit'] ?? 0);
+        $isFixedPay = (($editWt['payment_type'] ?? 'per_unit') === 'fixed');
+        $payment    = $isFixedPay ? $rate : round($qty * $rate, 2);
         DB::execute("UPDATE daily_assignments SET assignment_date=?,worker_id=?,plantation_id=?,work_type_id=?,quantity=?,rate=?,payment=?,notes=?,updated_at=NOW() WHERE id=?",
             [$date,$wid,$pid,$wtid,$qty,$rate,$payment,$notes,$id]);
         flash('success', 'Assignment updated.');
@@ -536,9 +542,15 @@ require_once __DIR__ . '/includes/header.php';
       <div class="work-type-grid" style="margin-bottom:16px">
         <?php foreach ($workTypes as $i => $wt): ?>
         <div class="wt-card <?= $i===0?'selected':'' ?>"
-             onclick="selectWT(this,<?= $wt['id'] ?>,<?= $wt['rate_per_unit'] ?>,'<?= sanitize($wt['unit_label']) ?>','<?= strtolower(sanitize($wt['unit_label'])) ?>')">
+             onclick="selectWT(this,<?= $wt['id'] ?>,<?= $wt['rate_per_unit'] ?>,'<?= sanitize($wt['unit_label']) ?>','<?= strtolower(sanitize($wt['unit_label'])) ?>','<?= ($wt['payment_type']??'per_unit')==='fixed'?'fixed':'per_unit' ?>')">
           <div class="wt-name"><?= sanitize($wt['name']) ?></div>
-          <div class="wt-rate">Rs. <?= number_format($wt['rate_per_unit'],0) ?> / <?= sanitize($wt['unit_label']) ?></div>
+          <div class="wt-rate">
+            <?php if (($wt['payment_type']??'per_unit')==='fixed'): ?>
+              Rs. <?= number_format($wt['rate_per_unit'],0) ?> fixed / worker
+            <?php else: ?>
+              Rs. <?= number_format($wt['rate_per_unit'],0) ?> / <?= sanitize($wt['unit_label']) ?>
+            <?php endif; ?>
+          </div>
         </div>
         <?php endforeach; ?>
       </div>
@@ -993,6 +1005,7 @@ require_once __DIR__ . '/includes/header.php';
 
 var currentRate = <?= (float)($workTypes[0]['rate_per_unit']??50) ?>;
 var currentUnit = '<?= sanitize($workTypes[0]['unit_label']??'KG') ?>';
+var isFixedPay  = <?= (($workTypes[0]['payment_type']??'per_unit')==='fixed') ? 'true' : 'false' ?>;
 
 // Detect mode by unit_label — works for all estates regardless of work type ID
 function getModeFromUnit(unit) {
@@ -1012,12 +1025,13 @@ var currentMode = getModeFromUnit('<?= strtolower(sanitize($workTypes[0]['unit_l
 var isSpraying  = (currentMode === 'spraying');
 var isPlucking  = (currentMode === 'plucking');
 
-function selectWT(el, id, rate, unit, unitLower) {
+function selectWT(el, id, rate, unit, unitLower, paymentType) {
   document.querySelectorAll('.wt-card').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
   document.getElementById('a-wt-id').value = id;
   currentRate = parseFloat(rate);
   currentUnit = unit;
+  isFixedPay  = (paymentType === 'fixed');
 
   // Mode determined by unit label — not hardcoded ID
   currentMode = getModeFromUnit(unitLower || unit);
@@ -1025,10 +1039,11 @@ function selectWT(el, id, rate, unit, unitLower) {
   isSpraying  = (currentMode === 'spraying');
 
   // Update hint message
+  var fixedNote = ' Payment is a fixed Rs. ' + Math.round(currentRate).toLocaleString() + ' per worker regardless of ' + unit.toLowerCase() + ' — the ' + unit.toLowerCase() + ' is still recorded for production reports.';
   var hints = {
-    plucking: 'Enter KG for each selected worker individually.',
-    spraying: 'Enter number of ' + unitPluralLabel(unit).toLowerCase() + ' per worker.',
-    auto:     'Each selected worker = 1 ' + unit + ' automatically.'
+    plucking: 'Enter KG for each selected worker individually.' + (isFixedPay ? fixedNote : ''),
+    spraying: 'Enter number of ' + unitPluralLabel(unit).toLowerCase() + ' per worker.' + (isFixedPay ? fixedNote : ''),
+    auto:     'Each selected worker = 1 ' + unit + ' automatically.' + (isFixedPay ? fixedNote : '')
   };
   var hintEl = document.getElementById('qty-hint');
   if (hintEl) hintEl.textContent = hints[currentMode];
@@ -1124,7 +1139,14 @@ function calcTotal() {
       qty = 1; // auto: 1 unit per person always
     }
 
-    total      += qty * currentRate;
+    // Fixed Amount work types pay a flat rate per worker, not qty × rate —
+    // but a plucking-mode worker still needs KG > 0 entered to count (same
+    // rule the server enforces on save).
+    if (isFixedPay) {
+      if (currentMode !== 'plucking' || qty > 0) total += currentRate;
+    } else {
+      total += qty * currentRate;
+    }
     totalUnits += qty;
     workerCount++;
   });
@@ -1141,7 +1163,11 @@ function calcTotal() {
     } else {
       qty = 1; // auto: 1 unit per temp worker too
     }
-    total      += qty * currentRate;
+    if (isFixedPay) {
+      if (currentMode !== 'plucking' || qty > 0) total += currentRate;
+    } else {
+      total += qty * currentRate;
+    }
     totalUnits += qty;
     tempCount2++;
   });
