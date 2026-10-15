@@ -1299,8 +1299,8 @@ function removeTempWorker(idx) {
 
 // When work type changes, rebuild temp worker rows to show correct inputs
 var _origSelectWT = selectWT;
-selectWT = function(el, id, rate, unit, plucking) {
-  _origSelectWT(el, id, rate, unit, plucking);
+selectWT = function(el, id, rate, unit, unitLower, paymentType) {
+  _origSelectWT(el, id, rate, unit, unitLower, paymentType);
   // Rebuild all temp worker rows with new unit
   var rows = document.querySelectorAll('#temp-workers-list [id^="temp-row-"]');
   var names = [];
