@@ -13,8 +13,7 @@ $nav = [
     ['key'=>'factory-management', 'label'=>'Factory Management', 'icon'=>'ti-building-factory-2', 'roles'=>['admin']],
     ['key'=>'fertilizer',  'label'=>'Fertilizer Cycles',   'icon'=>'ti-droplet',          'roles'=>['admin']],
     ['key'=>'clearing',    'label'=>'Clearing Cycles',     'icon'=>'ti-scissors',         'roles'=>['admin']],
-    ['key'=>'plantations', 'label'=>'Plantation Sections', 'icon'=>'ti-trees',            'roles'=>['admin']],
-    ['key'=>'estates',        'label'=>'Manage Estates',       'icon'=>'ti-trees',            'roles'=>['admin']],
+    ['key'=>'estates',        'label'=>'Estate Management',    'icon'=>'ti-trees',            'roles'=>['admin']],
     ['key'=>'reports',        'label'=>'Reports',             'icon'=>'ti-chart-bar',        'roles'=>['admin']],
     ['key'=>'users',          'label'=>'User Management',     'icon'=>'ti-shield-lock',      'roles'=>['admin']],
     ['key'=>'settings',       'label'=>'Settings',            'icon'=>'ti-settings',         'roles'=>['admin']],
@@ -148,7 +147,6 @@ $_themeAccent   = $appSettings['theme_accent']   ?? '#4CAF50';
         </a>
         <?php if($item['key']==='workers'): ?><div class="nav-section">Finance</div><?php endif; ?>
         <?php if($item['key']==='expenses'): ?><div class="nav-section">Plantation</div><?php endif; ?>
-        <?php if($item['key']==='clearing'): ?><div class="nav-section">Estate Management</div><?php endif; ?>
         <?php if($item['key']==='estates'): ?><div class="nav-section">Admin</div><?php endif; ?>
       <?php endif; ?>
     <?php endforeach; ?>
