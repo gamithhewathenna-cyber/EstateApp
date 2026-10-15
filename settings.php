@@ -218,8 +218,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $payType = ($_POST['wt_payment_type'] ?? 'per_unit') === 'fixed' ? 'fixed' : 'per_unit';
         $desc  = trim($_POST['wt_desc']  ?? '');
         if (!$name || $rate < 0) { flash('error','Work type name and rate are required.'); redirect('/settings.php#worktypes'); }
-        DB::insert("INSERT INTO work_types (estate_id, name, unit_label, rate_per_unit, payment_type, description, is_active) VALUES (?,?,?,?,?,?,1)",
-            [$estateId, $name, $unit ?: 'Unit', $rate, $payType, $desc]);
+        // New work types go to the end of the manual order
+        $nextOrder = (int)(DB::fetchOne("SELECT COALESCE(MAX(sort_order),-1) as m FROM work_types WHERE estate_id=?", [$estateId])['m']) + 1;
+        DB::insert("INSERT INTO work_types (estate_id, name, unit_label, rate_per_unit, payment_type, sort_order, description, is_active) VALUES (?,?,?,?,?,?,?,1)",
+            [$estateId, $name, $unit ?: 'Unit', $rate, $payType, $nextOrder, $desc]);
         flash('success', 'Work type "' . $name . '" added.');
         redirect('/settings.php#worktypes');
     }
@@ -254,6 +256,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // with ON DELETE CASCADE, which would erase historical records.
         DB::execute("UPDATE work_types SET is_active=0, is_deleted=1 WHERE id=? AND estate_id=?", [$id, $estateId]);
         flash('success', 'Work type deleted. Existing assignment records are unaffected.');
+        redirect('/settings.php#worktypes');
+    }
+
+    // ── REORDER WORK TYPE (move up/down) ──────────
+    if ($action === 'move_up' || $action === 'move_down') {
+        $id  = (int)($_POST['wt_id'] ?? 0);
+        $ids = array_column(DB::fetchAll("SELECT id FROM work_types WHERE estate_id=? AND is_deleted=0 ORDER BY sort_order ASC, id ASC", [$estateId]), 'id');
+        $idx = array_search($id, $ids, true);
+        if ($idx !== false) {
+            $swapIdx = $action === 'move_up' ? $idx - 1 : $idx + 1;
+            if ($swapIdx >= 0 && $swapIdx < count($ids)) {
+                [$ids[$idx], $ids[$swapIdx]] = [$ids[$swapIdx], $ids[$idx]];
+                // Rewrite sort_order from the new array order — avoids any
+                // issue with ties, since every row gets a fresh, distinct value.
+                foreach ($ids as $pos => $wtId) {
+                    DB::execute("UPDATE work_types SET sort_order=? WHERE id=? AND estate_id=?", [$pos, $wtId, $estateId]);
+                }
+            }
+        }
         redirect('/settings.php#worktypes');
     }
 
@@ -422,7 +443,7 @@ $currentUser = DB::fetchOne("SELECT * FROM users WHERE id=?", [Auth::user()['id'
 $allUsers    = DB::fetchAll("SELECT id, name, username, role, email, is_active FROM users ORDER BY role, name");
 
 // Load work types
-$workTypes = DB::fetchAll("SELECT * FROM work_types WHERE estate_id=? AND is_deleted=0 ORDER BY is_active DESC, id ASC", [$estateId]);
+$workTypes = DB::fetchAll("SELECT * FROM work_types WHERE estate_id=? AND is_deleted=0 ORDER BY sort_order ASC, id ASC", [$estateId]);
 
 // ── BACKUP: auto backup status + saved backups list ──
 $backupAutoFiles = glob($backupDir . 'backup_auto_*.sql') ?: [];
@@ -850,10 +871,17 @@ require_once __DIR__ . '/includes/header.php';
     <!-- Existing work types -->
     <div style="margin-bottom:20px">
       <div style="font-size:12px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">Current Work Types</div>
-      <?php foreach ($workTypes as $wt): ?>
+      <?php foreach ($workTypes as $i => $wt): ?>
       <form method="POST" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid #e8ede5;border-radius:var(--radius-md);margin-bottom:8px;background:<?= $wt['is_active']?'#fff':'var(--gray-50)' ?>;flex-wrap:wrap">
-        <input type="hidden" name="action" value="update_rate">
         <input type="hidden" name="wt_id" value="<?= $wt['id'] ?>">
+        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+          <button type="submit" name="action" value="move_up" class="btn btn-outline btn-sm" title="Move up" style="padding:5px 8px" <?= $i===0?'disabled':'' ?>>
+            <i class="ti ti-chevron-up"></i>
+          </button>
+          <button type="submit" name="action" value="move_down" class="btn btn-outline btn-sm" title="Move down" style="padding:5px 8px" <?= $i===count($workTypes)-1?'disabled':'' ?>>
+            <i class="ti ti-chevron-down"></i>
+          </button>
+        </div>
         <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:180px">
           <div style="width:34px;height:34px;border-radius:8px;background:<?= $wt['is_active']?'var(--green-50)':'var(--gray-50)' ?>;display:flex;align-items:center;justify-content:center;flex-shrink:0">
             <i class="ti ti-briefcase" style="color:<?= $wt['is_active']?'var(--green-600)':'var(--gray-400)' ?>;font-size:16px"></i>
@@ -877,25 +905,21 @@ require_once __DIR__ . '/includes/header.php';
           <span style="font-size:11px;color:var(--gray-400);white-space:nowrap"><?= ($wt['payment_type']??'per_unit')==='fixed' ? 'fixed / worker' : '/ '.sanitize($wt['unit_label']) ?></span>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0">
-          <button type="submit" class="btn btn-primary btn-sm" title="Save changes">
+          <button type="submit" name="action" value="update_rate" class="btn btn-primary btn-sm" title="Save changes">
             <i class="ti ti-check"></i> Save
           </button>
-          <form method="POST" style="display:inline" onsubmit="return confirm('<?= $wt['is_active']?'Deactivate':'Activate' ?> this work type?')">
-            <input type="hidden" name="action" value="toggle_work_type">
-            <input type="hidden" name="wt_id" value="<?= $wt['id'] ?>">
-            <input type="hidden" name="wt_current" value="<?= $wt['is_active'] ?>">
-            <button type="submit" class="btn btn-outline btn-sm" style="color:<?= $wt['is_active']?'var(--amber-600)':'var(--green-600)' ?>">
-              <i class="ti ti-<?= $wt['is_active']?'eye-off':'eye' ?>"></i>
-              <?= $wt['is_active']?'Disable':'Enable' ?>
-            </button>
-          </form>
-          <form method="POST" style="display:inline" onsubmit="return confirm('Delete this work type? It will be removed from this list, but all existing assignment records that use it are kept exactly as they are.')">
-            <input type="hidden" name="action" value="delete_work_type">
-            <input type="hidden" name="wt_id" value="<?= $wt['id'] ?>">
-            <button type="submit" class="btn btn-outline btn-sm" style="color:var(--red-600)" title="Delete work type (keeps existing records)">
-              <i class="ti ti-trash"></i> Delete
-            </button>
-          </form>
+          <button type="submit" name="action" value="toggle_work_type"
+                  onclick="return confirm('<?= $wt['is_active']?'Deactivate':'Activate' ?> this work type?')"
+                  class="btn btn-outline btn-sm" style="color:<?= $wt['is_active']?'var(--amber-600)':'var(--green-600)' ?>">
+            <i class="ti ti-<?= $wt['is_active']?'eye-off':'eye' ?>"></i>
+            <?= $wt['is_active']?'Disable':'Enable' ?>
+          </button>
+          <input type="hidden" name="wt_current" value="<?= $wt['is_active'] ?>">
+          <button type="submit" name="action" value="delete_work_type"
+                  onclick="return confirm('Delete this work type? It will be removed from this list, but all existing assignment records that use it are kept exactly as they are.')"
+                  class="btn btn-outline btn-sm" style="color:var(--red-600)" title="Delete work type (keeps existing records)">
+            <i class="ti ti-trash"></i> Delete
+          </button>
         </div>
       </form>
       <?php endforeach; ?>

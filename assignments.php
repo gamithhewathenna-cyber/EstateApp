@@ -198,7 +198,7 @@ $editRow      = ($editId && $isAdmin) ? DB::fetchOne("SELECT * FROM daily_assign
 
 $workers     = DB::fetchAll("SELECT * FROM workers WHERE estate_id=? AND is_active=1 ORDER BY full_name", [$estateId]);
 $plantations = DB::fetchAll("SELECT * FROM plantations WHERE estate_id=? AND is_active=1 ORDER BY name", [$estateId]);
-$workTypes   = DB::fetchAll("SELECT * FROM work_types WHERE estate_id=? AND is_active=1 AND is_deleted=0 ORDER BY name ASC", [$estateId]);
+$workTypes   = DB::fetchAll("SELECT * FROM work_types WHERE estate_id=? AND is_active=1 AND is_deleted=0 ORDER BY sort_order ASC, id ASC", [$estateId]);
 
 // Pending approvals count
 $pendingCount = DB::fetchOne("SELECT COUNT(*) as cnt FROM daily_assignments WHERE estate_id=? AND approval_status='pending'", [$estateId])['cnt'] ?? 0;
