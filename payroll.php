@@ -396,12 +396,17 @@ require_once __DIR__ . '/includes/header.php';
       <div style="font-size:12px;color:var(--gray-400)"><?= date('F Y',strtotime($selMonth.'-01')) ?> · <?= count($workerDetail) ?> records</div>
     </div>
     <!-- Mark all this worker paid -->
-    <form method="POST" style="margin-left:auto">
-      <input type="hidden" name="action" value="mark_worker_paid">
-      <input type="hidden" name="worker_id" value="<?= $detailWorker ?>">
-      <input type="hidden" name="month" value="<?= $selMonth ?>">
-      <button type="submit" class="btn btn-sm" style="background:#065f46;color:#fff"><i class="ti ti-circle-check"></i> Mark All Paid</button>
-    </form>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <a href="payslip-pdf.php?worker=<?= $detailWorker ?>&month=<?= $selMonth ?>" target="_blank" class="btn btn-outline btn-sm">
+        <i class="ti ti-file-invoice"></i> Payslip
+      </a>
+      <form method="POST">
+        <input type="hidden" name="action" value="mark_worker_paid">
+        <input type="hidden" name="worker_id" value="<?= $detailWorker ?>">
+        <input type="hidden" name="month" value="<?= $selMonth ?>">
+        <button type="submit" class="btn btn-sm" style="background:#065f46;color:#fff"><i class="ti ti-circle-check"></i> Mark All Paid</button>
+      </form>
+    </div>
   </div>
   <div class="table-wrap">
     <table class="payroll-detail-table">
@@ -500,6 +505,9 @@ require_once __DIR__ . '/includes/header.php';
               <!-- View details -->
               <a href="payroll.php?month=<?= $selMonth ?>&tab=worker&worker=<?= $w['worker_id'] ?>"
                  class="btn btn-outline btn-sm" title="View details"><i class="ti ti-eye"></i></a>
+              <!-- Payslip -->
+              <a href="payslip-pdf.php?worker=<?= $w['worker_id'] ?>&month=<?= $selMonth ?>" target="_blank"
+                 class="btn btn-outline btn-sm" title="Download payslip"><i class="ti ti-file-invoice"></i></a>
               <!-- Quick mark all paid -->
               <?php if ($overallStatus !== 'paid'): ?>
               <form method="POST" style="display:inline">
